@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Premium Memo - Aesthetic & Fast</title>
+    <meta name="description" content="A premium, glassmorphism-inspired memo application powered by Supabase.">
+
+    <!-- Google Fonts: Inter & Outfit -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Outfit:wght@300;400;600;700&display=swap"
+        rel="stylesheet">
+
+    <!-- Supabase JS SDK -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+
+    <link rel="stylesheet" href="css/style.css">
+</head>
+
+<body class="dark-mode">
+    <div class="app-container">
+        <!-- Sidebar or Header for Search & Tags -->
+        <aside class="sidebar glass">
+            <header class="app-header">
+                <h1 class="logo">Memo<span>.</span></h1>
+            </header>
+
+            <div class="search-box glass">
+                <i data-lucide="search"></i>
+                <input type="text" id="global-search" placeholder="内容やタグを検索..." autocomplete="off">
+            </div>
+
+            <nav class="tag-manager">
+                <div class="section-title">
+                    <span>Tags</span>
+                    <button id="add-tag-btn" class="icon-btn"><i data-lucide="plus"></i></button>
+                </div>
+                <ul id="tag-list" class="tag-list">
+                    <!-- Tags will be dynamically loaded -->
+                </ul>
+            </nav>
+
+            <div class="sidebar-footer">
+                <button id="help-btn" class="help-trigger">
+                    <i data-lucide="help-circle"></i>
+                    <span>ショートカット</span>
+                </button>
+            </div>
+        </aside>
+
+        <!-- Main Content Area -->
+        <main class="main-content">
+            <header class="content-header">
+                <div class="filter-status" id="filter-info">
+                    All Memos
+                </div>
+                <button id="new-memo-btn" class="btn-primary glass">
+                    <i data-lucide="plus-circle"></i>
+                    <span>New Memo</span>
+                </button>
+            </header>
+
+            <div id="memo-grid" class="memo-grid">
+                <!-- Memos will be dynamically loaded -->
+                <div class="loading-state">
+                    <div class="spinner"></div>
+                    <p>Loading your thoughts...</p>
+                </div>
+            </div>
+        </main>
+
+        <!-- Memo Editor Modal/Overlay -->
+        <div id="memo-editor" class="editor-overlay hidden">
+            <div class="editor-content glass-premium">
+                <header class="editor-header">
+                    <div class="editor-actions">
+                        <button id="close-editor" class="icon-btn"><i data-lucide="x"></i></button>
+                    </div>
+                </header>
+                <div class="editor-body">
+                    <textarea id="memo-textarea" placeholder="ここにメモを入力... (1行目がタイトルになります)"></textarea>
+                </div>
+                <div class="quick-tag-creator">
+                    <div class="section-title-small">クイックタグ作成</div>
+                    <div class="quick-tag-inputs">
+                        <input type="text" id="quick-tag-name" placeholder="新しいタグ名">
+                        <input type="text" id="quick-tag-group" placeholder="グループ (任意)">
+                        <button id="quick-add-tag-btn" class="icon-btn-highlight"><i data-lucide="plus"></i></button>
+                    </div>
+                </div>
+                <footer class="editor-footer">
+                    <div class="memo-tags-editor" id="memo-tags-editor">
+                        <!-- Currently assigned tags -->
+                    </div>
+                    <div class="memo-meta">
+                        <span id="save-status" class="save-status"></span>
+                        <span id="memo-timestamp"></span>
+                        <button id="save-memo" class="btn-primary glass">Save</button>
+                        <button id="delete-memo" class="btn-danger-outline"><i data-lucide="trash-2"></i></button>
+                    </div>
+                </footer>
+            </div>
+        </div>
+
+        <!-- Tag Edit Modal -->
+        <div id="tag-editor-modal" class="modal-overlay hidden">
+            <div class="modal-content glass-premium">
+                <h2>Edit Tag</h2>
+                <div class="input-group-vertical">
+                    <label>タグ名</label>
+                    <input type="text" id="tag-name-input" placeholder="Tag name">
+                </div>
+                <div class="input-row">
+                    <div class="input-group-vertical">
+                        <label>グループ</label>
+                        <input type="text" id="tag-group-input" placeholder="General, Project, etc.">
+                    </div>
+                    <div class="input-group-vertical" style="width: 80px;">
+                        <label>順序</label>
+                        <input type="number" id="tag-sort-input" value="0">
+                    </div>
+                </div>
+                <div class="color-picker-simple">
+                    <div class="color-option" style="background:#3b82f6" data-color="#3b82f6"></div>
+                    <div class="color-option" style="background:#10b981" data-color="#10b981"></div>
+                    <div class="color-option" style="background:#f59e0b" data-color="#f59e0b"></div>
+                    <div class="color-option" style="background:#ef4444" data-color="#ef4444"></div>
+                    <div class="color-option" style="background:#8b5cf6" data-color="#8b5cf6"></div>
+                </div>
+                <div class="modal-actions">
+                    <button class="btn-secondary" id="cancel-tag-edit">Cancel</button>
+                    <button class="btn-primary" id="save-tag-edit">Save</button>
+                    <button class="btn-danger" id="delete-tag-confirm">Delete</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Help Modal -->
+        <div id="help-modal" class="modal-overlay hidden">
+            <div class="modal-content glass-premium help-card">
+                <header class="modal-header">
+                    <h2>ショートカットキーについて</h2>
+                    <button id="close-help" class="icon-btn"><i data-lucide="x"></i></button>
+                </header>
+                <div class="help-body">
+                    <div class="shortcut-row">
+                        <span class="shortcut-desc">検索にフォーカス</span>
+                        <kbd>/</kbd>
+                    </div>
+                    <div class="shortcut-row">
+                        <span class="shortcut-desc">メモを新規作成</span>
+                        <div class="kbd-group"><kbd>Alt</kbd> + <kbd>N</kbd></div>
+                    </div>
+                    <div class="shortcut-row">
+                        <span class="shortcut-desc">メモを保存 (編集時)</span>
+                        <div class="kbd-group"><kbd>Ctrl</kbd> + <kbd>S</kbd></div>
+                    </div>
+                    <div class="shortcut-row">
+                        <span class="shortcut-desc">閉じる / キャンセル</span>
+                        <kbd>Esc</kbd>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Configuration Script (Safe way to provide keys) -->
+    <script id="supabase-config">
+        // These will be prompted to the user later
+        window.SUPABASE_CONFIG = {
+            url: 'https://vxymhwkkkstwhpjhiawy.supabase.co',
+            key: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZ4eW1od2tra3N0d2hwamhpYXd5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njc5OTg3ODYsImV4cCI6MjA4MzU3NDc4Nn0.T29kLI9sdgcOMNft-QkFDRXaEqXr4Bw0xKs3kg73GH8'
+        };
+    </script>
+    <script src="js/supabase.js"></script>
+    <script src="js/app.js"></script>
+    <script>
+        // Initialize Lucide icons
+        lucide.createIcons();
+    </script>
+</body>
+
+</html>
