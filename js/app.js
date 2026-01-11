@@ -44,6 +44,21 @@ let currentEditingTagId = null;
 let selectedTagColor = '#3b82f6';
 let collapsedGroups = new Set();
 let autoSaveTimeout = null;
+let currentMemoIsPublic = false;
+
+// DOM Elements - Auth
+const authScreen = document.getElementById('auth-screen');
+const authForm = document.getElementById('auth-form');
+const emailInput = document.getElementById('email-input');
+const loginBtn = document.getElementById('login-btn');
+const authMessage = document.getElementById('auth-message');
+const userInfoDisplay = document.getElementById('user-info-display');
+const userAvatar = document.getElementById('user-avatar');
+const userEmailDisplay = document.getElementById('user-email-display');
+const logoutBtn = document.getElementById('logout-btn');
+const togglePublicBtn = document.getElementById('toggle-public-btn');
+const publicIcon = document.getElementById('public-icon');
+const publicText = document.getElementById('public-text');
 
 // Initialize
 async function init() {
@@ -59,7 +74,41 @@ async function init() {
         return;
     }
 
+    // Initialize auth manager
+    await window.authManager.init();
+
+    // Set up auth state change handler
+    window.authManager.onAuthStateChange = (user) => {
+        if (user) {
+            onUserLoggedIn();
+        } else {
+            onUserLoggedOut();
+        }
+    };
+
+    // Check if user is already logged in
+    if (window.authManager.isAuthenticated()) {
+        onUserLoggedIn();
+    } else {
+        onUserLoggedOut();
+    }
+}
+
+async function onUserLoggedIn() {
+    authScreen.classList.add('hidden');
+    userInfoDisplay.classList.remove('hidden');
+    userAvatar.textContent = window.authManager.getInitial();
+    userEmailDisplay.textContent = window.authManager.getUserEmail();
+
     await fetchData();
+    render();
+}
+
+function onUserLoggedOut() {
+    authScreen.classList.remove('hidden');
+    userInfoDisplay.classList.add('hidden');
+    memos = [];
+    tags = [];
     render();
 }
 
@@ -231,12 +280,16 @@ window.openEditor = function (id = null) {
         const memo = memos.find(m => m.id === id);
         memoTextarea.value = memo.content;
         selectedTagsForMemo = memo.tags || [];
+        currentMemoIsPublic = memo.is_public || false;
         deleteMemoBtn.classList.remove('hidden');
     } else {
         memoTextarea.value = '';
         selectedTagsForMemo = [];
+        currentMemoIsPublic = false;
         deleteMemoBtn.classList.add('hidden');
     }
+
+    updatePublicToggleUI();
     renderTagsInEditor();
     memoEditor.classList.remove('hidden');
     memoTextarea.focus();
@@ -304,9 +357,17 @@ async function performSave(isAuto = false) {
     }
 
     const client = window.getSupabase();
+    const userId = window.authManager.getUserId();
+
+    if (!userId) {
+        console.error('User not authenticated');
+        return;
+    }
+
     const payload = {
         content,
         tags: selectedTagsForMemo,
+        is_public: currentMemoIsPublic,
         updated_at: new Date().toISOString()
     };
 
@@ -314,6 +375,7 @@ async function performSave(isAuto = false) {
         if (currentEditingMemoId) {
             await client.from('memos').update(payload).eq('id', currentEditingMemoId);
         } else {
+            payload.user_id = userId;
             const { data, error } = await client.from('memos').insert([payload]).select();
             if (!error && data && data[0]) {
                 currentEditingMemoId = data[0].id;
@@ -530,6 +592,70 @@ quickAddTagBtn.onclick = async () => {
         renderTagsInEditor(); // Refresh selection list
     }
 };
+
+// Authentication handlers
+authForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+
+    const email = emailInput.value.trim();
+    if (!email) return;
+
+    loginBtn.disabled = true;
+    loginBtn.innerHTML = '<span class="auth-spinner"></span>送信中...';
+    authMessage.classList.add('hidden');
+
+    try {
+        await window.authManager.signInWithEmail(email);
+
+        authMessage.className = 'auth-message success';
+        authMessage.textContent = `${email} にログインコードを送信しました。メールをご確認ください。`;
+        authMessage.classList.remove('hidden');
+
+        emailInput.value = '';
+    } catch (error) {
+        console.error('Login error:', error);
+        authMessage.className = 'auth-message error';
+        authMessage.textContent = 'ログインに失敗しました: ' + error.message;
+        authMessage.classList.remove('hidden');
+    } finally {
+        loginBtn.disabled = false;
+        loginBtn.textContent = 'ログインコードを送信';
+    }
+});
+
+logoutBtn.addEventListener('click', async () => {
+    if (!confirm('ログアウトしますか？')) return;
+
+    try {
+        await window.authManager.signOut();
+    } catch (error) {
+        console.error('Logout error:', error);
+        alert('ログアウトに失敗しました');
+    }
+});
+
+// Public/Private toggle
+togglePublicBtn.addEventListener('click', () => {
+    currentMemoIsPublic = !currentMemoIsPublic;
+    updatePublicToggleUI();
+});
+
+function updatePublicToggleUI() {
+    if (currentMemoIsPublic) {
+        publicIcon.setAttribute('data-lucide', 'unlock');
+        publicText.textContent = 'パブリック';
+        togglePublicBtn.style.background = 'rgba(16, 185, 129, 0.2)';
+        togglePublicBtn.style.borderColor = 'rgba(16, 185, 129, 0.4)';
+        togglePublicBtn.style.color = '#d1fae5';
+    } else {
+        publicIcon.setAttribute('data-lucide', 'lock');
+        publicText.textContent = 'プライベート';
+        togglePublicBtn.style.background = '';
+        togglePublicBtn.style.borderColor = '';
+        togglePublicBtn.style.color = '';
+    }
+    lucide.createIcons();
+}
 
 // Start
 document.addEventListener('DOMContentLoaded', init);

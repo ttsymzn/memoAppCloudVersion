@@ -11,28 +11,48 @@ CREATE TABLE IF NOT EXISTS tags (
 -- Create memos table
 CREATE TABLE IF NOT EXISTS memos (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
     content TEXT DEFAULT '',
     tags UUID[] DEFAULT '{}',
     color TEXT DEFAULT 'rgba(255, 255, 255, 0.1)',
+    is_public BOOLEAN DEFAULT false,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
--- Enable Row Level Security (RLS) - Optional but recommended
--- For this demo, we'll keep it simple, but in production, you'd add policies.
+-- Enable Row Level Security (RLS)
 ALTER TABLE tags ENABLE ROW LEVEL SECURITY;
 ALTER TABLE memos ENABLE ROW LEVEL SECURITY;
 
--- Allow public access for now (Simplest setup for the user)
-CREATE POLICY "Allow public select" ON tags FOR SELECT TO public USING (true);
-CREATE POLICY "Allow public insert" ON tags FOR INSERT TO public WITH CHECK (true);
-CREATE POLICY "Allow public update" ON tags FOR UPDATE TO public USING (true);
-CREATE POLICY "Allow public delete" ON tags FOR DELETE TO public USING (true);
+-- Tags policies: Allow all authenticated users to manage tags
+CREATE POLICY "Allow authenticated select" ON tags FOR SELECT TO authenticated USING (true);
+CREATE POLICY "Allow authenticated insert" ON tags FOR INSERT TO authenticated WITH CHECK (true);
+CREATE POLICY "Allow authenticated update" ON tags FOR UPDATE TO authenticated USING (true);
+CREATE POLICY "Allow authenticated delete" ON tags FOR DELETE TO authenticated USING (true);
 
-CREATE POLICY "Allow public select" ON memos FOR SELECT TO public USING (true);
-CREATE POLICY "Allow public insert" ON memos FOR INSERT TO public WITH CHECK (true);
-CREATE POLICY "Allow public update" ON memos FOR UPDATE TO public USING (true);
-CREATE POLICY "Allow public delete" ON memos FOR DELETE TO public USING (true);
+-- Memos policies: Users can only see their own memos or public memos
+CREATE POLICY "Users can view own memos" ON memos 
+    FOR SELECT TO authenticated 
+    USING (auth.uid() = user_id);
+
+CREATE POLICY "Users can view public memos" ON memos 
+    FOR SELECT TO authenticated 
+    USING (is_public = true);
+
+-- Users can only insert their own memos
+CREATE POLICY "Users can insert own memos" ON memos 
+    FOR INSERT TO authenticated 
+    WITH CHECK (auth.uid() = user_id);
+
+-- Users can only update their own memos
+CREATE POLICY "Users can update own memos" ON memos 
+    FOR UPDATE TO authenticated 
+    USING (auth.uid() = user_id);
+
+-- Users can only delete their own memos
+CREATE POLICY "Users can delete own memos" ON memos 
+    FOR DELETE TO authenticated 
+    USING (auth.uid() = user_id);
 
 -- Function to handle updated_at
 CREATE OR REPLACE FUNCTION handle_updated_at()

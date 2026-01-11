@@ -21,6 +21,7 @@
     <script src="https://unpkg.com/lucide@latest"></script>
 
     <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/auth.css">
 </head>
 
 <body class="dark-mode">
@@ -47,6 +48,13 @@
             </nav>
 
             <div class="sidebar-footer">
+                <div id="user-info-display" class="user-info hidden">
+                    <div class="user-avatar" id="user-avatar">?</div>
+                    <div class="user-email" id="user-email-display"></div>
+                    <button id="logout-btn" class="logout-btn">
+                        <i data-lucide="log-out" style="width: 12px; height: 12px;"></i>
+                    </button>
+                </div>
                 <button id="help-btn" class="help-trigger">
                     <i data-lucide="help-circle"></i>
                     <span>ショートカット</span>
@@ -99,6 +107,10 @@
                         <!-- Currently assigned tags -->
                     </div>
                     <div class="memo-meta">
+                        <button id="toggle-public-btn" class="btn-secondary" title="公開/非公開を切り替え">
+                            <i data-lucide="lock" id="public-icon"></i>
+                            <span id="public-text">プライベート</span>
+                        </button>
                         <span id="save-status" class="save-status"></span>
                         <span id="memo-timestamp"></span>
                         <button id="save-memo" class="btn-primary glass">Save</button>
@@ -168,6 +180,27 @@
                 </div>
             </div>
         </div>
+
+        <!-- Authentication Screen -->
+        <div id="auth-screen" class="auth-container">
+            <div class="auth-card">
+                <div class="auth-header">
+                    <h1 class="auth-logo">Memo<span>.</span></h1>
+                    <p class="auth-subtitle">あなたの思考を整理する場所</p>
+                </div>
+                <form id="auth-form" class="auth-form">
+                    <div class="auth-input-group">
+                        <label class="auth-label" for="email-input">メールアドレス</label>
+                        <input type="email" id="email-input" class="auth-input" placeholder="your@email.com" required
+                            autocomplete="email">
+                    </div>
+                    <button type="submit" id="login-btn" class="auth-button">
+                        ログインコードを送信
+                    </button>
+                </form>
+                <div id="auth-message" class="auth-message hidden"></div>
+            </div>
+        </div>
     </div>
 
     <!-- Configuration Script (Safe way to provide keys) -->
@@ -179,6 +212,7 @@
         };
     </script>
     <script src="js/supabase.js"></script>
+    <script src="js/auth.js"></script>
     <script src="js/app.js"></script>
     <script>
         // Initialize Lucide icons
