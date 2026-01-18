@@ -609,11 +609,11 @@ window.openEditor = function (id = null) {
 
             if (memo.is_archived) {
                 modalArchiveBtn.classList.add('active');
-                modalArchiveBtn.querySelector('i').setAttribute('data-lucide', 'archive-restore');
+                modalArchiveBtn.querySelector('[data-lucide]').setAttribute('data-lucide', 'archive-restore');
                 modalArchiveBtn.title = "元に戻す";
             } else {
                 modalArchiveBtn.classList.remove('active');
-                modalArchiveBtn.querySelector('i').setAttribute('data-lucide', 'archive');
+                modalArchiveBtn.querySelector('[data-lucide]').setAttribute('data-lucide', 'archive');
                 modalArchiveBtn.title = "アーカイブ";
             }
         }
