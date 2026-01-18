@@ -43,6 +43,11 @@ const quickTagGroup = document.getElementById('quick-tag-group');
 const quickAddTagBtn = document.getElementById('quick-add-tag-btn');
 const saveStatus = document.getElementById('save-status');
 
+// CSV Import/Export DOM
+const exportCsvBtn = document.getElementById('export-csv-btn');
+const importCsvBtn = document.getElementById('import-csv-btn');
+const csvImportInput = document.getElementById('csv-import-input');
+
 // Tag Group Editor DOM
 const tagGroupEditorModal = document.getElementById('tag-group-editor-modal');
 const tagGroupNameInput = document.getElementById('tag-group-name-input');
@@ -1059,6 +1064,150 @@ helpBtn.onclick = () => {
 closeHelpBtn.onclick = () => {
     helpModal.classList.add('hidden');
 };
+
+// CSV Export Logic
+exportCsvBtn.onclick = async () => {
+    try {
+        const client = window.getSupabase();
+        const { data, error } = await client.from('memos').select('*');
+        if (error) throw error;
+
+        if (!data || data.length === 0) {
+            alert('エクスポートするメモがありません。');
+            return;
+        }
+
+        const headers = ['content', 'is_pinned', 'is_archived', 'color', 'tags'];
+        const csvRows = [headers.join(',')];
+
+        for (const memo of data) {
+            const row = headers.map(header => {
+                let val = memo[header];
+                if (header === 'tags') {
+                    val = Array.isArray(val) ? val.join('|') : '';
+                }
+                if (typeof val === 'string') {
+                    // Escape quotes and wrap in quotes
+                    val = `"${val.replace(/"/g, '""')}"`;
+                }
+                return val;
+            });
+            csvRows.push(row.join(','));
+        }
+
+        const csvContent = csvRows.join('\n');
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.setAttribute('href', url);
+        link.setAttribute('download', `memos_export_${new Date().toISOString().split('T')[0]}.csv`);
+        link.style.visibility = 'hidden';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+
+        showSaveStatus('CSVをエクスポートしました');
+    } catch (err) {
+        console.error('Export error:', err);
+        alert('エクスポートに失敗しました: ' + err.message);
+    }
+};
+
+// CSV Import Logic
+importCsvBtn.onclick = () => {
+    csvImportInput.click();
+};
+
+csvImportInput.onchange = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = async (event) => {
+        const text = event.target.result;
+        await processCSV(text);
+        csvImportInput.value = ''; // Reset
+    };
+    reader.readAsText(file);
+};
+
+async function processCSV(csvText) {
+    try {
+        const lines = csvText.split('\n');
+        const headers = lines[0].split(',').map(h => h.trim().replace(/"/g, ''));
+
+        const memosToImport = [];
+        const userId = window.authManager.getUserId();
+
+        for (let i = 1; i < lines.length; i++) {
+            const line = lines[i].trim();
+            if (!line) continue;
+
+            // Simple CSV parser that handles quotes
+            const values = [];
+            let current = '';
+            let inQuotes = false;
+            for (let j = 0; j < line.length; j++) {
+                const char = line[j];
+                if (char === '"') {
+                    if (inQuotes && line[j + 1] === '"') {
+                        current += '"';
+                        j++;
+                    } else {
+                        inQuotes = !inQuotes;
+                    }
+                } else if (char === ',' && !inQuotes) {
+                    values.push(current);
+                    current = '';
+                } else {
+                    current += char;
+                }
+            }
+            values.push(current);
+
+            const memo = { user_id: userId };
+            headers.forEach((header, index) => {
+                let val = values[index];
+                if (header === 'is_pinned' || header === 'is_archived') {
+                    val = val === 'true';
+                } else if (header === 'tags') {
+                    val = val ? val.split('|').map(id => parseInt(id)).filter(id => !isNaN(id)) : [];
+                }
+                memo[header] = val;
+            });
+            memosToImport.push(memo);
+        }
+
+        if (memosToImport.length === 0) {
+            alert('インポートするデータが見当たらないか、形式が正しくありません。');
+            return;
+        }
+
+        const client = window.getSupabase();
+        const { error } = await client.from('memos').insert(memosToImport);
+
+        if (error) throw error;
+
+        showSaveStatus(`${memosToImport.length}件のメモをインポートしました`);
+        await fetchData();
+        render();
+    } catch (err) {
+        console.error('Import error:', err);
+        alert('インポートに失敗しました: ' + err.message);
+    }
+}
+
+function showSaveStatus(message) {
+    if (!saveStatus) return;
+    saveStatus.textContent = message;
+    saveStatus.classList.remove('hidden');
+    saveStatus.style.opacity = '1';
+
+    setTimeout(() => {
+        saveStatus.style.opacity = '0';
+        setTimeout(() => saveStatus.classList.add('hidden'), 500);
+    }, 3000);
+}
 
 // Quick Tag Creator Logic
 quickAddTagBtn.onclick = async () => {
