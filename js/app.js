@@ -5,6 +5,7 @@ let activeTagFilter = null;
 let searchQuery = '';
 let currentEditingMemoId = null;
 let expandedMemoIds = new Set();
+let currentView = 'all'; // 'all' or 'archived'
 
 // DOM Elements
 const memoGrid = document.getElementById('memo-grid');
@@ -60,6 +61,10 @@ const logoutBtn = document.getElementById('logout-btn');
 const togglePublicBtn = document.getElementById('toggle-public-btn');
 const publicIcon = document.getElementById('public-icon');
 const publicText = document.getElementById('public-text');
+
+const viewAllBtn = document.getElementById('view-all');
+const viewArchivedBtn = document.getElementById('view-archived');
+const filterInfo = document.getElementById('filter-info');
 
 // Initialize
 async function init() {
@@ -196,17 +201,66 @@ function renderTags() {
     lucide.createIcons();
 }
 
+function saveUIState() {
+    const state = {
+        expandedMemoIds: Array.from(expandedMemoIds),
+        collapsedGroups: Array.from(collapsedGroups),
+        currentView: currentView,
+        activeTagFilter: activeTagFilter
+    };
+    localStorage.setItem('memo_app_ui_state', JSON.stringify(state));
+}
+
+function loadUIState() {
+    const saved = localStorage.getItem('memo_app_ui_state');
+    if (saved) {
+        try {
+            const state = JSON.parse(saved);
+            if (state.expandedMemoIds) expandedMemoIds = new Set(state.expandedMemoIds);
+            if (state.collapsedGroups) collapsedGroups = new Set(state.collapsedGroups);
+            if (state.currentView) {
+                currentView = state.currentView;
+                // Update UI for current view
+                updateSidebarActiveState();
+            }
+            if (state.activeTagFilter) activeTagFilter = state.activeTagFilter;
+        } catch (e) {
+            console.error("Failed to load UI state:", e);
+        }
+    }
+}
+
+function updateSidebarActiveState() {
+    if (currentView === 'archived') {
+        viewArchivedBtn.classList.add('active');
+        viewAllBtn.classList.remove('active');
+    } else {
+        viewAllBtn.classList.add('active');
+        viewArchivedBtn.classList.remove('active');
+    }
+}
+
 window.toggleGroup = function (groupName) {
     if (collapsedGroups.has(groupName)) {
         collapsedGroups.delete(groupName);
     } else {
         collapsedGroups.add(groupName);
     }
+    saveUIState();
     renderTags();
 };
 
 function renderMemos() {
     let filtered = memos;
+
+    // Filter by Archive status
+    if (currentView === 'archived') {
+        filtered = filtered.filter(m => m.is_archived === true);
+        filterInfo.textContent = 'Archived Memos';
+    } else {
+        filtered = filtered.filter(m => !m.is_archived);
+        filterInfo.textContent = 'Inbox';
+    }
 
     // Apply tag filter
     if (activeTagFilter) {
@@ -220,7 +274,17 @@ function renderMemos() {
             const hasText = m.content.toLowerCase().includes(query);
             const matchingTags = tags.filter(t => t.name.toLowerCase().includes(query)).map(t => t.id);
             const hasTag = m.tags && m.tags.some(tid => matchingTags.includes(tid));
-            return hasText || hasTag;
+
+            // Date search
+            const createdDate = m.created_at ? new Date(m.created_at).toLocaleDateString('ja-JP', {
+                year: 'numeric', month: '2-digit', day: '2-digit'
+            }) : '';
+            const updatedDate = m.updated_at ? new Date(m.updated_at).toLocaleDateString('ja-JP', {
+                year: 'numeric', month: '2-digit', day: '2-digit'
+            }) : '';
+            const hasDate = createdDate.includes(query) || updatedDate.includes(query);
+
+            return hasText || hasTag || hasDate;
         });
     }
 
@@ -241,8 +305,8 @@ function renderMemos() {
         const title = lines[0] || 'Untitled';
         const bodyContent = lines.slice(1).join('\n');
 
-        const isExpanded = expandedMemoIds.has(memo.id);
         const isPinned = memo.is_pinned || false;
+        const isExpanded = searchQuery.trim() !== '' || expandedMemoIds.has(memo.id);
 
         // Highlighting
         const highlightedTitle = highlightMatch(title, searchQuery);
@@ -267,9 +331,10 @@ function renderMemos() {
         }).join('');
 
         return `
-            <div class="memo-card glass ${isExpanded ? 'expanded' : ''} ${isPinned ? 'pinned' : ''}" 
+            <div class="memo-card glass ${isPinned ? 'pinned' : ''} ${isExpanded ? 'expanded' : 'collapsed'}" 
                  id="memo-${memo.id}" 
                  onclick="toggleMemoContent('${memo.id}')" 
+                 ondblclick="openEditor('${memo.id}')"
                  style="background: ${memo.color}">
                 
                 ${isPinned ? '<div class="pin-indicator"><i data-lucide="pin"></i></div>' : ''}
@@ -280,9 +345,15 @@ function renderMemos() {
                         <button class="action-btn" title="編集" onclick="openEditor('${memo.id}')">
                             <i data-lucide="edit-3"></i>
                         </button>
+                        ${memo.is_archived ? `
+                        <button class="action-btn active" title="元に戻す" onclick="unarchiveMemo('${memo.id}')">
+                            <i data-lucide="archive-restore"></i>
+                        </button>
+                        ` : `
                         <button class="action-btn" title="アーカイブ" onclick="archiveMemo('${memo.id}')">
                             <i data-lucide="archive"></i>
                         </button>
+                        `}
                         <button class="action-btn ${isPinned ? 'active' : ''}" title="ピン止め" onclick="togglePinMemo('${memo.id}')">
                             <i data-lucide="pin"></i>
                         </button>
@@ -295,7 +366,7 @@ function renderMemos() {
                     </div>
                 </div>
 
-                <div class="memo-content-preview ${isExpanded ? 'show' : ''}">
+                <div class="memo-content-full">
                     ${highlightedBody ? `<div class="memo-body-full">${highlightedBody.replace(/\n/g, '<br>')}</div>` : '<div class="memo-body-empty">本文なし</div>'}
                 </div>
 
@@ -334,6 +405,7 @@ window.toggleMemoContent = function (id) {
     } else {
         expandedMemoIds.add(id);
     }
+    saveUIState();
     renderMemos();
     lucide.createIcons();
 };
@@ -342,30 +414,85 @@ window.togglePinMemo = async function (id) {
     const memo = memos.find(m => m.id === id);
     if (!memo) return;
 
+    const originalState = memo.is_pinned;
     memo.is_pinned = !memo.is_pinned;
 
     // Optimistic UI update
     renderMemos();
     lucide.createIcons();
 
-    // Persist if possible
+    // Persist to DB
     const client = window.getSupabase();
     try {
-        await client.from('memos').update({ is_pinned: memo.is_pinned }).eq('id', id);
+        const { error } = await client.from('memos').update({ is_pinned: memo.is_pinned }).eq('id', id);
+        if (error) {
+            // Revert on error
+            memo.is_pinned = originalState;
+            renderMemos();
+            alert("ピン留めの保存に失敗しました。カラムが存在するか確認してください: " + error.message);
+            console.error("Pin update error:", error);
+        }
     } catch (err) {
-        console.warn("Pin persistence failed (column might not exist):", err);
+        memo.is_pinned = originalState;
+        renderMemos();
+        console.error("Unexpected pin error:", err);
     }
 };
 
 window.archiveMemo = async function (id) {
-    if (!confirm('このメモをアーカイブしますか？（現在は非表示にするだけです）')) return;
+    // Optimistic Update: Hide immediately
+    const memoIndex = memos.findIndex(m => m.id === id);
+    if (memoIndex === -1) return;
 
-    // Local mock: just remove from list
-    memos = memos.filter(m => m.id !== id);
-    renderMemos();
-    lucide.createIcons();
+    const originalMemo = { ...memos[memoIndex] };
+    memos[memoIndex].is_archived = true;
+    render();
 
-    // In a real app, update is_archived = true in DB
+    const client = window.getSupabase();
+    try {
+        const { error } = await client.from('memos').update({ is_archived: true }).eq('id', id);
+        if (error) {
+            // Revert on error
+            memos[memoIndex] = originalMemo;
+            render();
+            alert("アーカイブに失敗しました: " + error.message);
+            return;
+        }
+        // Sync with server data just in case
+        await fetchData();
+        render();
+    } catch (err) {
+        memos[memoIndex] = originalMemo;
+        render();
+        console.error("Unexpected archive error:", err);
+    }
+};
+
+window.unarchiveMemo = async function (id) {
+    // Optimistic Update
+    const memoIndex = memos.findIndex(m => m.id === id);
+    if (memoIndex === -1) return;
+
+    const originalMemo = { ...memos[memoIndex] };
+    memos[memoIndex].is_archived = false;
+    render();
+
+    const client = window.getSupabase();
+    try {
+        const { error } = await client.from('memos').update({ is_archived: false }).eq('id', id);
+        if (error) {
+            memos[memoIndex] = originalMemo;
+            render();
+            alert("復元に失敗しました: " + error.message);
+            return;
+        }
+        await fetchData();
+        render();
+    } catch (err) {
+        memos[memoIndex] = originalMemo;
+        render();
+        console.error("Unexpected unarchive error:", err);
+    }
 };
 
 window.copyMemo = function (id) {
@@ -381,19 +508,44 @@ window.printMemo = function (id) {
     const memo = memos.find(m => m.id === id);
     if (!memo) return;
 
+    // Prepare metadata
+    const createdDate = memo.created_at ? new Date(memo.created_at).toLocaleDateString('ja-JP', {
+        year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit'
+    }) : '不明';
+    const updatedDate = memo.updated_at ? new Date(memo.updated_at).toLocaleDateString('ja-JP', {
+        year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit'
+    }) : '不明';
+
+    const tagNames = (memo.tags || []).map(tid => {
+        const tag = tags.find(t => t.id === tid);
+        return tag ? tag.name : null;
+    }).filter(t => t !== null).join(', ');
+
     const printWindow = window.open('', '_blank');
     printWindow.document.write(`
         <html>
             <head>
                 <title>Print Memo</title>
                 <style>
-                    body { font-family: sans-serif; padding: 20px; line-height: 1.6; }
-                    .title { font-size: 24px; font-weight: bold; border-bottom: 2px solid #ccc; padding-bottom: 10px; margin-bottom: 20px; }
-                    .content { white-space: pre-wrap; }
+                    body { font-family: sans-serif; padding: 40px; line-height: 1.6; color: #333; }
+                    .header { border-bottom: 2px solid #333; margin-bottom: 20px; padding-bottom: 10px; }
+                    .title { font-size: 28px; font-weight: bold; margin-bottom: 5px; }
+                    .meta { font-size: 12px; color: #666; display: flex; flex-wrap: wrap; gap: 15px; }
+                    .meta-item { display: flex; align-items: center; }
+                    .meta-label { font-weight: bold; margin-right: 5px; }
+                    .content { white-space: pre-wrap; font-size: 16px; margin-top: 20px; }
+                    .tags { margin-top: 20px; font-size: 14px; font-style: italic; color: #555; }
                 </style>
             </head>
             <body>
-                <div class="title">${memo.content.split('\n')[0] || 'Untitled'}</div>
+                <div class="header">
+                    <div class="title">${memo.content.split('\n')[0] || 'Untitled'}</div>
+                    <div class="meta">
+                        <div class="meta-item"><span class="meta-label">作成日:</span> ${createdDate}</div>
+                        <div class="meta-item"><span class="meta-label">更新日:</span> ${updatedDate}</div>
+                        ${tagNames ? `<div class="meta-item"><span class="meta-label">タグ:</span> ${tagNames}</div>` : ''}
+                    </div>
+                </div>
                 <div class="content">${memo.content}</div>
             </body>
         </html>
@@ -405,6 +557,7 @@ window.printMemo = function (id) {
 // Logic - Filtering
 window.setTagFilter = function (tagId) {
     activeTagFilter = tagId;
+    saveUIState();
     render();
 };
 
@@ -800,5 +953,23 @@ function updatePublicToggleUI() {
     lucide.createIcons();
 }
 
+// View switching
+viewAllBtn.onclick = () => {
+    currentView = 'all';
+    updateSidebarActiveState();
+    saveUIState();
+    render();
+};
+
+viewArchivedBtn.onclick = () => {
+    currentView = 'archived';
+    updateSidebarActiveState();
+    saveUIState();
+    render();
+};
+
 // Start
-document.addEventListener('DOMContentLoaded', init);
+document.addEventListener('DOMContentLoaded', async () => {
+    loadUIState();
+    await init();
+});
