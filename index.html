@@ -37,6 +37,19 @@
                 <input type="text" id="global-search" placeholder="内容やタグを検索..." autocomplete="off">
             </div>
 
+            <nav class="main-nav">
+                <ul class="nav-list">
+                    <li id="view-all" class="nav-item active">
+                        <i data-lucide="inbox"></i>
+                        <span>Inbox</span>
+                    </li>
+                    <li id="view-archived" class="nav-item">
+                        <i data-lucide="archive"></i>
+                        <span>Archived</span>
+                    </li>
+                </ul>
+            </nav>
+
             <nav class="tag-manager">
                 <div class="section-title">
                     <span>Tags</span>
@@ -66,7 +79,7 @@
         <main class="main-content">
             <header class="content-header">
                 <div class="filter-status" id="filter-info">
-                    All Memos
+                    Inbox
                 </div>
                 <button id="new-memo-btn" class="btn-primary glass">
                     <i data-lucide="plus-circle"></i>
