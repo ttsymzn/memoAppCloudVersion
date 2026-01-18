@@ -1077,14 +1077,18 @@ exportCsvBtn.onclick = async () => {
             return;
         }
 
-        const headers = ['content', 'is_pinned', 'is_archived', 'color', 'tags'];
+        const headers = ['content', 'is_pinned', 'is_archived', 'is_public', 'color', 'tags', 'created_at', 'updated_at'];
         const csvRows = [headers.join(',')];
 
         for (const memo of data) {
             const row = headers.map(header => {
                 let val = memo[header];
                 if (header === 'tags') {
-                    val = Array.isArray(val) ? val.join('|') : '';
+                    // Convert tag IDs to names for export
+                    val = Array.isArray(val) ? val.map(tid => {
+                        const tag = tags.find(t => t.id === tid);
+                        return tag ? tag.name : tid;
+                    }).join('|') : '';
                 }
                 if (typeof val === 'string') {
                     // Escape quotes and wrap in quotes
@@ -1168,10 +1172,15 @@ async function processCSV(csvText) {
             const memo = { user_id: userId };
             headers.forEach((header, index) => {
                 let val = values[index];
-                if (header === 'is_pinned' || header === 'is_archived') {
+                if (header === 'is_pinned' || header === 'is_archived' || header === 'is_public') {
                     val = val === 'true';
                 } else if (header === 'tags') {
-                    val = val ? val.split('|').map(id => parseInt(id)).filter(id => !isNaN(id)) : [];
+                    // Convert tag names back to IDs
+                    const tagNames = val ? val.split('|') : [];
+                    val = tagNames.map(name => {
+                        const tag = tags.find(t => t.name === name);
+                        return tag ? tag.id : null;
+                    }).filter(id => id !== null);
                 }
                 memo[header] = val;
             });
