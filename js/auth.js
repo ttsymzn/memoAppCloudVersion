@@ -30,10 +30,18 @@ class AuthManager {
         const client = window.getSupabase();
         if (!client) throw new Error('Supabase not initialized');
 
+        // Determine redirect URL:
+        // 1. Use manual config if provided
+        // 2. Otherwise use the current URL without query/hash
+        const config = window.SUPABASE_CONFIG || {};
+        const redirectUrl = config.redirectUrl || window.location.href.split('#')[0].split('?')[0];
+
+        console.log('Using redirect link:', redirectUrl);
+
         const { data, error } = await client.auth.signInWithOtp({
             email: email,
             options: {
-                emailRedirectTo: window.location.origin,
+                emailRedirectTo: redirectUrl,
             }
         });
 
