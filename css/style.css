@@ -63,6 +63,7 @@ body {
     border-right: 1px solid var(--glass-border);
     background: var(--glass-bg);
     /* Explicit background for mobile drawer */
+    overflow-y: auto;
 }
 
 .logo {
@@ -584,7 +585,7 @@ body {
     padding: 2rem;
     position: relative;
     resize: both;
-    overflow: hidden;
+    overflow: auto;
 }
 
 .editor-body {
@@ -677,6 +678,8 @@ body {
     display: flex;
     flex-direction: column;
     gap: 1.5rem;
+    max-height: 90vh;
+    overflow-y: auto;
 }
 
 .modal-content h2 {
