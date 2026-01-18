@@ -652,7 +652,6 @@ window.openEditor = function (id = null) {
     updatePublicToggleUI();
     lucide.createIcons(); // Ensure icons in header are updated
     renderTagsInEditor();
-    memoTagsEditor.innerHTML = ''; // Temporarily clear while hidden
     memoEditor.classList.remove('hidden');
 
     // Reset selection when opening editor
@@ -671,7 +670,16 @@ function renderTagsInEditor() {
         groups[g].push(tag);
     });
 
-    memoTagsEditor.innerHTML = Object.keys(groups).sort().map(groupName => {
+    const headerHTML = `
+        <div class="editor-tags-header">
+            <div class="section-title-small">タグを選択</div>
+            <button class="icon-btn" onclick="event.stopPropagation(); openTagEditor()" title="タグを新規作成">
+                <i data-lucide="plus-circle" style="width: 16px; height: 16px;"></i>
+            </button>
+        </div>
+    `;
+
+    memoTagsEditor.innerHTML = headerHTML + Object.keys(groups).sort().map(groupName => {
         const groupTags = groups[groupName];
         return `
             <div class="editor-tag-group">
@@ -692,6 +700,8 @@ function renderTagsInEditor() {
             </div>
         `;
     }).join('');
+
+    lucide.createIcons();
 }
 
 window.toggleTagSelection = function (tagId) {

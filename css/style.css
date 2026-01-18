@@ -641,6 +641,14 @@ body {
     margin-bottom: 1rem;
 }
 
+.editor-tags-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+    width: 100%;
+}
+
 .tag-badge {
     padding: 0.4rem 0.8rem;
     border-radius: 20px;
