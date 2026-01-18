@@ -30,6 +30,9 @@
         <aside class="sidebar glass">
             <header class="app-header">
                 <h1 class="logo">Memo<span>.</span></h1>
+                <button id="close-sidebar" class="sidebar-toggle-btn close-only">
+                    <i data-lucide="x"></i>
+                </button>
             </header>
 
             <div class="search-box glass">
@@ -78,8 +81,13 @@
         <!-- Main Content Area -->
         <main class="main-content">
             <header class="content-header">
-                <div class="filter-status" id="filter-info">
-                    Inbox
+                <div class="header-left">
+                    <button id="mobile-sidebar-toggle" class="sidebar-toggle-btn mobile-only">
+                        <i data-lucide="menu"></i>
+                    </button>
+                    <div class="filter-status" id="filter-info">
+                        Inbox
+                    </div>
                 </div>
                 <button id="new-memo-btn" class="btn-primary glass">
                     <i data-lucide="plus-circle"></i>
@@ -214,6 +222,8 @@
                 <div id="auth-message" class="auth-message hidden"></div>
             </div>
         </div>
+        <!-- Sidebar Overlay for Mobile -->
+        <div id="sidebar-overlay" class="sidebar-overlay hidden"></div>
     </div>
 
     <!-- Configuration Script (Safe way to provide keys) -->

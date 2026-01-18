@@ -66,6 +66,12 @@ const viewAllBtn = document.getElementById('view-all');
 const viewArchivedBtn = document.getElementById('view-archived');
 const filterInfo = document.getElementById('filter-info');
 
+// Mobile UI Elements
+const mobileSidebarToggle = document.getElementById('mobile-sidebar-toggle');
+const closeSidebarBtn = document.getElementById('close-sidebar');
+const sidebarOverlay = document.getElementById('sidebar-overlay');
+const sidebar = document.querySelector('.sidebar');
+
 // Initialize
 async function init() {
     const client = window.getSupabase();
@@ -559,11 +565,19 @@ window.setTagFilter = function (tagId) {
     activeTagFilter = tagId;
     saveUIState();
     render();
+
+    // Close sidebar on mobile
+    if (window.innerWidth <= 768) {
+        closeMobileSidebar();
+    }
 };
 
 globalSearch.addEventListener('input', (e) => {
     searchQuery = e.target.value;
     render();
+
+    // Auto-expand sidebar if it's closed but searching? 
+    // Usually better to keep it open or closed based on user action.
 });
 
 // Logic - Editor
@@ -959,6 +973,7 @@ viewAllBtn.onclick = () => {
     updateSidebarActiveState();
     saveUIState();
     render();
+    if (window.innerWidth <= 768) closeMobileSidebar();
 };
 
 viewArchivedBtn.onclick = () => {
@@ -966,7 +981,33 @@ viewArchivedBtn.onclick = () => {
     updateSidebarActiveState();
     saveUIState();
     render();
+    if (window.innerWidth <= 768) closeMobileSidebar();
 };
+
+// Mobile Sidebar Functions
+function openMobileSidebar() {
+    sidebar.classList.add('open');
+    sidebarOverlay.classList.remove('hidden');
+    document.body.style.overflow = 'hidden'; // Prevent scrolling
+}
+
+function closeMobileSidebar() {
+    sidebar.classList.remove('open');
+    sidebarOverlay.classList.add('hidden');
+    document.body.style.overflow = '';
+}
+
+if (mobileSidebarToggle) {
+    mobileSidebarToggle.addEventListener('click', openMobileSidebar);
+}
+
+if (closeSidebarBtn) {
+    closeSidebarBtn.addEventListener('click', closeMobileSidebar);
+}
+
+if (sidebarOverlay) {
+    sidebarOverlay.addEventListener('click', closeMobileSidebar);
+}
 
 // Start
 document.addEventListener('DOMContentLoaded', async () => {
