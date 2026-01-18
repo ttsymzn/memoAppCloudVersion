@@ -743,6 +743,27 @@ body {
     background: rgba(255, 255, 255, 0.05);
 }
 
+.edit-group-btn {
+    margin-left: auto;
+    background: transparent;
+    border: none;
+    color: var(--text-dim);
+    cursor: pointer;
+    opacity: 0;
+    transition: opacity 0.2s;
+    display: flex;
+    align-items: center;
+    margin-right: 0.5rem;
+}
+
+.tag-group-header:hover .edit-group-btn {
+    opacity: 1;
+}
+
+.edit-group-btn:hover {
+    color: var(--text-main);
+}
+
 .tag-group-header .chevron {
     transition: transform 0.3s ease;
 }

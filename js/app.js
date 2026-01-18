@@ -43,8 +43,15 @@ const quickTagGroup = document.getElementById('quick-tag-group');
 const quickAddTagBtn = document.getElementById('quick-add-tag-btn');
 const saveStatus = document.getElementById('save-status');
 
+// Tag Group Editor DOM
+const tagGroupEditorModal = document.getElementById('tag-group-editor-modal');
+const tagGroupNameInput = document.getElementById('tag-group-name-input');
+const saveTagGroupEditBtn = document.getElementById('save-tag-group-edit');
+const cancelTagGroupEditBtn = document.getElementById('cancel-tag-group-edit');
+
 let selectedTagsForMemo = [];
 let currentEditingTagId = null;
+let currentEditingGroupName = null;
 let selectedTagColor = '#3b82f6';
 let collapsedGroups = new Set();
 let autoSaveTimeout = null;
@@ -193,6 +200,9 @@ function renderTags() {
         groupHeader.onclick = () => toggleGroup(groupName);
         groupHeader.innerHTML = `
             <span>${groupName}</span>
+            <button class="edit-group-btn" onclick="event.stopPropagation(); openTagGroupEditor('${groupName}')">
+                <i data-lucide="settings-2" style="width: 12px; height: 12px;"></i>
+            </button>
             <i data-lucide="chevron-down" class="chevron" style="width: 12px; height: 12px;"></i>
         `;
         tagList.appendChild(groupHeader);
@@ -895,6 +905,41 @@ saveTagEditBtn.onclick = async () => {
     tagEditorModal.classList.add('hidden');
 };
 
+window.openTagGroupEditor = function (groupName) {
+    currentEditingGroupName = groupName;
+    tagGroupNameInput.value = groupName;
+    tagGroupEditorModal.classList.remove('hidden');
+};
+
+cancelTagGroupEditBtn.onclick = () => {
+    tagGroupEditorModal.classList.add('hidden');
+};
+
+saveTagGroupEditBtn.onclick = async () => {
+    const newGroupName = tagGroupNameInput.value.trim();
+    if (!newGroupName || newGroupName === currentEditingGroupName) {
+        tagGroupEditorModal.classList.add('hidden');
+        return;
+    }
+
+    const client = window.getSupabase();
+
+    // Update all tags that belong to the old group name
+    const { error } = await client
+        .from('tags')
+        .update({ tag_group: newGroupName })
+        .eq('tag_group', currentEditingGroupName);
+
+    if (error) {
+        alert("グループ名の更新に失敗しました: " + error.message);
+        console.error("Update group error:", error);
+    } else {
+        await fetchData();
+        render();
+        tagGroupEditorModal.classList.add('hidden');
+    }
+};
+
 deleteTagConfirmBtn.onclick = async () => {
     if (!currentEditingTagId) return;
     if (!confirm('このタグを削除しますか？（メモとの紐付けも解除されます）')) return;
@@ -949,6 +994,7 @@ document.addEventListener('keydown', (e) => {
     if (e.key === 'Escape') {
         memoEditor.classList.add('hidden');
         tagEditorModal.classList.add('hidden');
+        tagGroupEditorModal.classList.add('hidden');
         helpModal.classList.add('hidden');
     }
 
