@@ -196,7 +196,7 @@ function renderTags() {
 
         groupTags.forEach(tag => {
             const tagItem = document.createElement('li');
-            tagItem.className = `tag-item ${activeTagFilter === tag.id ? 'active' : ''}`;
+            tagItem.className = `tag-item ${activeTagFilter == tag.id ? 'active' : ''}`;
             tagItem.onclick = () => setTagFilter(tag.id);
             tagItem.innerHTML = `
                 <div class="tag-dot" style="background: ${tag.color}"></div>
@@ -277,7 +277,7 @@ function renderMemos() {
 
     // Apply tag filter
     if (activeTagFilter) {
-        filtered = filtered.filter(m => m.tags && m.tags.includes(activeTagFilter));
+        filtered = filtered.filter(m => m.tags && m.tags.some(tid => tid == activeTagFilter));
     }
 
     // Apply search
@@ -354,7 +354,6 @@ function renderMemos() {
                 
                 <div class="memo-header">
                     <div class="memo-title">${highlightedTitle}</div>
-                        <div class="memo-title">${highlightedTitle}</div>
                 </div>
 
                 <div class="memo-content-full">
@@ -426,7 +425,7 @@ window.toggleMemoContent = function (id) {
 };
 
 window.togglePinMemo = async function (id) {
-    const memo = memos.find(m => m.id === id);
+    const memo = memos.find(m => m.id == id);
     if (!memo) return;
 
     const originalState = memo.is_pinned;
@@ -456,7 +455,7 @@ window.togglePinMemo = async function (id) {
 
 window.archiveMemo = async function (id) {
     // Optimistic Update: Hide immediately
-    const memoIndex = memos.findIndex(m => m.id === id);
+    const memoIndex = memos.findIndex(m => m.id == id);
     if (memoIndex === -1) return;
 
     const originalMemo = { ...memos[memoIndex] };
@@ -485,7 +484,7 @@ window.archiveMemo = async function (id) {
 
 window.unarchiveMemo = async function (id) {
     // Optimistic Update
-    const memoIndex = memos.findIndex(m => m.id === id);
+    const memoIndex = memos.findIndex(m => m.id == id);
     if (memoIndex === -1) return;
 
     const originalMemo = { ...memos[memoIndex] };
@@ -511,7 +510,7 @@ window.unarchiveMemo = async function (id) {
 };
 
 window.copyMemo = function (id) {
-    const memo = memos.find(m => m.id === id);
+    const memo = memos.find(m => m.id == id);
     if (!memo) return;
 
     navigator.clipboard.writeText(memo.content).then(() => {
@@ -520,7 +519,7 @@ window.copyMemo = function (id) {
 };
 
 window.printMemo = function (id) {
-    const memo = memos.find(m => m.id === id);
+    const memo = memos.find(m => m.id == id);
     if (!memo) return;
 
     // Prepare metadata
@@ -596,25 +595,27 @@ window.openEditor = function (id = null) {
     saveStatus.className = 'save-status';
 
     if (id) {
-        const memo = memos.find(m => m.id === id);
-        memoTextarea.value = memo.content;
-        selectedTagsForMemo = memo.tags || [];
-        currentMemoIsPublic = memo.is_public || false;
-        deleteMemoBtn.classList.remove('hidden');
-        headerActionGroup.classList.remove('hidden');
+        const memo = memos.find(m => m.id == id);
+        if (memo) {
+            memoTextarea.value = memo.content;
+            selectedTagsForMemo = memo.tags || [];
+            currentMemoIsPublic = memo.is_public || false;
+            deleteMemoBtn.classList.remove('hidden');
+            headerActionGroup.classList.remove('hidden');
 
-        // Update modal actions state
-        if (memo.is_pinned) modalPinBtn.classList.add('active');
-        else modalPinBtn.classList.remove('active');
+            // Update modal actions state
+            if (memo.is_pinned) modalPinBtn.classList.add('active');
+            else modalPinBtn.classList.remove('active');
 
-        if (memo.is_archived) {
-            modalArchiveBtn.classList.add('active');
-            modalArchiveBtn.querySelector('i').setAttribute('data-lucide', 'archive-restore');
-            modalArchiveBtn.title = "元に戻す";
-        } else {
-            modalArchiveBtn.classList.remove('active');
-            modalArchiveBtn.querySelector('i').setAttribute('data-lucide', 'archive');
-            modalArchiveBtn.title = "アーカイブ";
+            if (memo.is_archived) {
+                modalArchiveBtn.classList.add('active');
+                modalArchiveBtn.querySelector('i').setAttribute('data-lucide', 'archive-restore');
+                modalArchiveBtn.title = "元に戻す";
+            } else {
+                modalArchiveBtn.classList.remove('active');
+                modalArchiveBtn.querySelector('i').setAttribute('data-lucide', 'archive');
+                modalArchiveBtn.title = "アーカイブ";
+            }
         }
     } else {
         memoTextarea.value = '';
@@ -807,7 +808,7 @@ addTagBtn.onclick = () => openTagEditor();
 window.openTagEditor = function (id = null) {
     currentEditingTagId = id;
     if (id) {
-        const tag = tags.find(t => t.id === id);
+        const tag = tags.find(t => t.id == id);
         tagNameInput.value = tag.name;
         tagGroupInput.value = tag.tag_group || 'General';
         tagSortInput.value = tag.sort_order || 0;
