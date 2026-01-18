@@ -61,7 +61,8 @@ body {
     flex-direction: column;
     gap: 2rem;
     border-right: 1px solid var(--glass-border);
-    background: var(--glass-bg); /* Explicit background for mobile drawer */
+    background: var(--glass-bg);
+    /* Explicit background for mobile drawer */
 }
 
 .logo {
@@ -346,7 +347,7 @@ body {
     display: flex;
     justify-content: space-between;
     align-items: flex-start;
-    gap: 1rem;
+    /* Removed gap to allow title more space if actions are elsewhere */
 }
 
 .memo-title {
@@ -361,6 +362,9 @@ body {
     gap: 0.25rem;
     opacity: 0;
     transition: opacity 0.3s ease;
+    margin-top: auto;
+    /* Push to bottom if in flex column */
+    justify-content: flex-end;
 }
 
 .memo-card:hover .memo-actions {
@@ -531,6 +535,42 @@ body {
 .editor-overlay:not(.hidden) {
     opacity: 1;
     pointer-events: auto;
+}
+
+.editor-header {
+    margin-bottom: 1rem;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid var(--glass-border);
+}
+
+.header-action-group {
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+}
+
+.icon-btn-highlight.secondary {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid var(--glass-border);
+    color: var(--text-dim);
+}
+
+.icon-btn-highlight.secondary:hover {
+    background: rgba(255, 255, 255, 0.15);
+    color: var(--text-main);
+}
+
+.icon-btn-highlight.secondary.active {
+    background: var(--primary);
+    color: white;
+    border-color: var(--primary-light);
+}
+
+.editor-actions {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
 }
 
 .editor-content {
@@ -1004,7 +1044,8 @@ kbd {
     justify-content: center;
     border-radius: 8px;
     transition: background 0.2s;
-    z-index: 1001; /* Above almost everything */
+    z-index: 1001;
+    /* Above almost everything */
 }
 
 .sidebar-toggle-btn:hover {
@@ -1061,7 +1102,8 @@ kbd {
         z-index: 1000 !important;
         transition: left 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
         padding: 1.5rem !important;
-        background: var(--bg-dark) !important; /* Solid background for mobile drawer */
+        background: var(--bg-dark) !important;
+        /* Solid background for mobile drawer */
         border-right: 1px solid var(--glass-border);
     }
 
@@ -1114,7 +1156,9 @@ kbd {
         gap: 0.75rem;
     }
 
-    .btn-secondary, .btn-primary, .btn-danger-outline {
+    .btn-secondary,
+    .btn-primary,
+    .btn-danger-outline {
         padding: 0.5rem 0.8rem;
         font-size: 0.85rem;
     }
@@ -1144,7 +1188,7 @@ kbd {
     .edit-tag-btn {
         opacity: 0.6 !important;
     }
-    
+
     .tag-item:active {
         background: rgba(255, 255, 255, 0.1);
     }

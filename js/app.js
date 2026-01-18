@@ -66,6 +66,13 @@ const viewAllBtn = document.getElementById('view-all');
 const viewArchivedBtn = document.getElementById('view-archived');
 const filterInfo = document.getElementById('filter-info');
 
+// Modal Actions DOM
+const modalArchiveBtn = document.getElementById('modal-archive-btn');
+const modalPinBtn = document.getElementById('modal-pin-btn');
+const modalCopyBtn = document.getElementById('modal-copy-btn');
+const modalPrintBtn = document.getElementById('modal-print-btn');
+const headerActionGroup = document.querySelector('.header-action-group');
+
 // Mobile UI Elements
 const mobileSidebarToggle = document.getElementById('mobile-sidebar-toggle');
 const closeSidebarBtn = document.getElementById('close-sidebar');
@@ -347,29 +354,7 @@ function renderMemos() {
                 
                 <div class="memo-header">
                     <div class="memo-title">${highlightedTitle}</div>
-                    <div class="memo-actions" onclick="event.stopPropagation()">
-                        <button class="action-btn" title="編集" onclick="openEditor('${memo.id}')">
-                            <i data-lucide="edit-3"></i>
-                        </button>
-                        ${memo.is_archived ? `
-                        <button class="action-btn active" title="元に戻す" onclick="unarchiveMemo('${memo.id}')">
-                            <i data-lucide="archive-restore"></i>
-                        </button>
-                        ` : `
-                        <button class="action-btn" title="アーカイブ" onclick="archiveMemo('${memo.id}')">
-                            <i data-lucide="archive"></i>
-                        </button>
-                        `}
-                        <button class="action-btn ${isPinned ? 'active' : ''}" title="ピン止め" onclick="togglePinMemo('${memo.id}')">
-                            <i data-lucide="pin"></i>
-                        </button>
-                        <button class="action-btn" title="メモのコピー" onclick="copyMemo('${memo.id}')">
-                            <i data-lucide="copy"></i>
-                        </button>
-                        <button class="action-btn" title="メモの印刷" onclick="printMemo('${memo.id}')">
-                            <i data-lucide="printer"></i>
-                        </button>
-                    </div>
+                        <div class="memo-title">${highlightedTitle}</div>
                 </div>
 
                 <div class="memo-content-full">
@@ -392,6 +377,30 @@ function renderMemos() {
                     </div>
                     ` : ''}
                     ${tagsHTML ? `<div class="memo-tags">${tagsHTML}</div>` : ''}
+                </div>
+
+                <div class="memo-actions" onclick="event.stopPropagation()">
+                    <button class="action-btn" title="編集" onclick="openEditor('${memo.id}')">
+                        <i data-lucide="edit-3"></i>
+                    </button>
+                    ${memo.is_archived ? `
+                    <button class="action-btn active" title="元に戻す" onclick="unarchiveMemo('${memo.id}')">
+                        <i data-lucide="archive-restore"></i>
+                    </button>
+                    ` : `
+                    <button class="action-btn" title="アーカイブ" onclick="archiveMemo('${memo.id}')">
+                        <i data-lucide="archive"></i>
+                    </button>
+                    `}
+                    <button class="action-btn ${isPinned ? 'active' : ''}" title="ピン止め" onclick="togglePinMemo('${memo.id}')">
+                        <i data-lucide="pin"></i>
+                    </button>
+                    <button class="action-btn" title="メモのコピー" onclick="copyMemo('${memo.id}')">
+                        <i data-lucide="copy"></i>
+                    </button>
+                    <button class="action-btn" title="メモの印刷" onclick="printMemo('${memo.id}')">
+                        <i data-lucide="printer"></i>
+                    </button>
                 </div>
             </div>
         `;
@@ -592,14 +601,31 @@ window.openEditor = function (id = null) {
         selectedTagsForMemo = memo.tags || [];
         currentMemoIsPublic = memo.is_public || false;
         deleteMemoBtn.classList.remove('hidden');
+        headerActionGroup.classList.remove('hidden');
+
+        // Update modal actions state
+        if (memo.is_pinned) modalPinBtn.classList.add('active');
+        else modalPinBtn.classList.remove('active');
+
+        if (memo.is_archived) {
+            modalArchiveBtn.classList.add('active');
+            modalArchiveBtn.querySelector('i').setAttribute('data-lucide', 'archive-restore');
+            modalArchiveBtn.title = "元に戻す";
+        } else {
+            modalArchiveBtn.classList.remove('active');
+            modalArchiveBtn.querySelector('i').setAttribute('data-lucide', 'archive');
+            modalArchiveBtn.title = "アーカイブ";
+        }
     } else {
         memoTextarea.value = '';
         selectedTagsForMemo = [];
         currentMemoIsPublic = false;
         deleteMemoBtn.classList.add('hidden');
+        headerActionGroup.classList.add('hidden');
     }
 
     updatePublicToggleUI();
+    lucide.createIcons(); // Ensure icons in header are updated
     renderTagsInEditor();
     memoEditor.classList.remove('hidden');
     memoTextarea.focus();
@@ -651,6 +677,48 @@ closeEditorBtn.onclick = () => {
 };
 
 newMemoBtn.onclick = () => openEditor();
+
+// Modal Actions Logic
+if (modalArchiveBtn) {
+    modalArchiveBtn.onclick = async () => {
+        if (!currentEditingMemoId) return;
+        const memo = memos.find(m => m.id === currentEditingMemoId);
+        if (memo.is_archived) {
+            await window.unarchiveMemo(currentEditingMemoId);
+        } else {
+            await window.archiveMemo(currentEditingMemoId);
+        }
+        // Modal stays open or closes? Usually better to stay open or refresh.
+        // For archive, we refresh and close.
+        memoEditor.classList.add('hidden');
+    };
+}
+
+if (modalPinBtn) {
+    modalPinBtn.onclick = async () => {
+        if (!currentEditingMemoId) return;
+        await window.togglePinMemo(currentEditingMemoId);
+
+        // Update UI state in modal
+        const memo = memos.find(m => m.id === currentEditingMemoId);
+        if (memo.is_pinned) modalPinBtn.classList.add('active');
+        else modalPinBtn.classList.remove('active');
+    };
+}
+
+if (modalCopyBtn) {
+    modalCopyBtn.onclick = () => {
+        if (!currentEditingMemoId) return;
+        window.copyMemo(currentEditingMemoId);
+    };
+}
+
+if (modalPrintBtn) {
+    modalPrintBtn.onclick = () => {
+        if (!currentEditingMemoId) return;
+        window.printMemo(currentEditingMemoId);
+    };
+}
 
 saveMemoBtn.onclick = async () => {
     await performSave();
