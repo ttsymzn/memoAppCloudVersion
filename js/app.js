@@ -6,6 +6,8 @@ let searchQuery = '';
 let currentEditingMemoId = null;
 let expandedMemoIds = new Set();
 let currentView = 'all'; // 'all' or 'archived'
+let selectedMemoIndex = -1;
+let displayedMemoIds = [];
 
 // DOM Elements
 const memoGrid = document.getElementById('memo-grid');
@@ -312,18 +314,21 @@ function renderMemos() {
         return new Date(b.updated_at) - new Date(a.updated_at);
     });
 
+    displayedMemoIds = filtered.map(m => m.id);
+
     if (filtered.length === 0) {
         memoGrid.innerHTML = `<div class="empty-state">メモが見つかりません</div>`;
         return;
     }
 
-    memoGrid.innerHTML = filtered.map(memo => {
+    memoGrid.innerHTML = filtered.map((memo, index) => {
         const lines = memo.content.split('\n');
         const title = lines[0] || 'Untitled';
         const bodyContent = lines.slice(1).join('\n');
 
         const isPinned = memo.is_pinned || false;
         const isExpanded = searchQuery.trim() !== '' || expandedMemoIds.has(memo.id);
+        const isSelected = index === selectedMemoIndex;
 
         // Highlighting
         const highlightedTitle = highlightMatch(title, searchQuery);
@@ -348,7 +353,7 @@ function renderMemos() {
         }).join('');
 
         return `
-            <div class="memo-card glass ${isPinned ? 'pinned' : ''} ${isExpanded ? 'expanded' : 'collapsed'}" 
+            <div class="memo-card glass ${isPinned ? 'pinned' : ''} ${isExpanded ? 'expanded' : 'collapsed'} ${isSelected ? 'selected' : ''}" 
                  id="memo-${memo.id}" 
                  onclick="toggleMemoContent('${memo.id}')" 
                  ondblclick="openEditor('${memo.id}')"
@@ -632,7 +637,13 @@ window.openEditor = function (id = null) {
     updatePublicToggleUI();
     lucide.createIcons(); // Ensure icons in header are updated
     renderTagsInEditor();
+    memoTagsEditor.innerHTML = ''; // Temporarily clear while hidden
     memoEditor.classList.remove('hidden');
+
+    // Reset selection when opening editor
+    selectedMemoIndex = -1;
+    updateSelectionHighlight();
+
     memoTextarea.focus();
 };
 
@@ -912,6 +923,25 @@ document.addEventListener('keydown', (e) => {
             e.preventDefault();
             openEditor();
         }
+
+        // Navigation Support
+        if (displayedMemoIds.length > 0) {
+            // j / Down
+            if (e.key === 'j' || e.key === 'ArrowDown') {
+                e.preventDefault();
+                moveSelection(1);
+            }
+            // k / Up
+            if (e.key === 'k' || e.key === 'ArrowUp') {
+                e.preventDefault();
+                moveSelection(-1);
+            }
+            // Enter to edit
+            if (e.key === 'Enter' && selectedMemoIndex !== -1) {
+                e.preventDefault();
+                openEditor(displayedMemoIds[selectedMemoIndex]);
+            }
+        }
     }
 
     // 2. Contextual Shortcuts
@@ -929,6 +959,47 @@ document.addEventListener('keydown', (e) => {
             saveMemoBtn.click();
         }
     }
+});
+
+function moveSelection(direction) {
+    if (displayedMemoIds.length === 0) return;
+
+    if (selectedMemoIndex === -1) {
+        selectedMemoIndex = direction > 0 ? 0 : displayedMemoIds.length - 1;
+    } else {
+        selectedMemoIndex += direction;
+        // Clamp
+        if (selectedMemoIndex < 0) selectedMemoIndex = 0;
+        if (selectedMemoIndex >= displayedMemoIds.length) selectedMemoIndex = displayedMemoIds.length - 1;
+    }
+
+    updateSelectionHighlight();
+    scrollToSelected();
+}
+
+function updateSelectionHighlight() {
+    const cards = memoGrid.querySelectorAll('.memo-card');
+    cards.forEach((card, index) => {
+        if (index === selectedMemoIndex) {
+            card.classList.add('selected');
+        } else {
+            card.classList.remove('selected');
+        }
+    });
+}
+
+function scrollToSelected() {
+    if (selectedMemoIndex === -1) return;
+    const selectedCard = document.getElementById(`memo-${displayedMemoIds[selectedMemoIndex]}`);
+    if (selectedCard) {
+        selectedCard.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+}
+
+// Reset selection on search focus
+globalSearch.addEventListener('focus', () => {
+    selectedMemoIndex = -1;
+    updateSelectionHighlight();
 });
 
 // Update placeholder to show shortcut

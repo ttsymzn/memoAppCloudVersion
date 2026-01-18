@@ -344,6 +344,12 @@ body {
     border-color: rgba(255, 255, 255, 0.2);
 }
 
+.memo-card.selected {
+    border-color: var(--primary-light);
+    box-shadow: 0 0 15px rgba(139, 92, 246, 0.4);
+    background: rgba(255, 255, 255, 0.1) !important;
+}
+
 .memo-header {
     display: flex;
     justify-content: space-between;
