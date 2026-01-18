@@ -4,6 +4,7 @@ let tags = [];
 let activeTagFilter = null;
 let searchQuery = '';
 let currentEditingMemoId = null;
+let expandedMemoIds = new Set();
 
 // DOM Elements
 const memoGrid = document.getElementById('memo-grid');
@@ -223,6 +224,13 @@ function renderMemos() {
         });
     }
 
+    // Sort: Pinned first
+    filtered.sort((a, b) => {
+        if (a.is_pinned && !b.is_pinned) return -1;
+        if (!a.is_pinned && b.is_pinned) return 1;
+        return new Date(b.updated_at) - new Date(a.updated_at);
+    });
+
     if (filtered.length === 0) {
         memoGrid.innerHTML = `<div class="empty-state">メモが見つかりません</div>`;
         return;
@@ -233,20 +241,80 @@ function renderMemos() {
         const title = lines[0] || 'Untitled';
         const bodyContent = lines.slice(1).join('\n');
 
+        const isExpanded = expandedMemoIds.has(memo.id);
+        const isPinned = memo.is_pinned || false;
+
         // Highlighting
         const highlightedTitle = highlightMatch(title, searchQuery);
         const highlightedBody = highlightMatch(bodyContent, searchQuery);
 
-        return `
-            <div class="memo-card glass" onclick="openEditor('${memo.id}')" style="background: ${memo.color}">
-                <h3 class="memo-title">${highlightedTitle}</h3>
-                <p class="memo-preview">${highlightedBody}</p>
-                <div class="memo-tags">
-                    ${(memo.tags || []).map(tid => {
+        // Format dates
+        const createdDate = memo.created_at ? new Date(memo.created_at).toLocaleDateString('ja-JP', {
+            year: 'numeric', month: '2-digit', day: '2-digit'
+        }) : '';
+        const updatedDate = memo.updated_at ? new Date(memo.updated_at).toLocaleDateString('ja-JP', {
+            year: 'numeric', month: '2-digit', day: '2-digit'
+        }) : '';
+
+        // Get user email
+        const userEmail = memo.user_id ? (window.authManager.getUserEmail() || '').split('@')[0] : '';
+
+        // Build tags HTML
+        const tagsHTML = (memo.tags || []).map(tid => {
             const tag = tags.find(t => t.id === tid);
             if (!tag) return '';
             return `<span class="badge" style="border-color: ${tag.color}">${tag.name}</span>`;
-        }).join('')}
+        }).join('');
+
+        return `
+            <div class="memo-card glass ${isExpanded ? 'expanded' : ''} ${isPinned ? 'pinned' : ''}" 
+                 id="memo-${memo.id}" 
+                 onclick="toggleMemoContent('${memo.id}')" 
+                 style="background: ${memo.color}">
+                
+                ${isPinned ? '<div class="pin-indicator"><i data-lucide="pin"></i></div>' : ''}
+                
+                <div class="memo-header">
+                    <div class="memo-title">${highlightedTitle}</div>
+                    <div class="memo-actions" onclick="event.stopPropagation()">
+                        <button class="action-btn" title="編集" onclick="openEditor('${memo.id}')">
+                            <i data-lucide="edit-3"></i>
+                        </button>
+                        <button class="action-btn" title="アーカイブ" onclick="archiveMemo('${memo.id}')">
+                            <i data-lucide="archive"></i>
+                        </button>
+                        <button class="action-btn ${isPinned ? 'active' : ''}" title="ピン止め" onclick="togglePinMemo('${memo.id}')">
+                            <i data-lucide="pin"></i>
+                        </button>
+                        <button class="action-btn" title="メモのコピー" onclick="copyMemo('${memo.id}')">
+                            <i data-lucide="copy"></i>
+                        </button>
+                        <button class="action-btn" title="メモの印刷" onclick="printMemo('${memo.id}')">
+                            <i data-lucide="printer"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="memo-content-preview ${isExpanded ? 'show' : ''}">
+                    ${highlightedBody ? `<div class="memo-body-full">${highlightedBody.replace(/\n/g, '<br>')}</div>` : '<div class="memo-body-empty">本文なし</div>'}
+                </div>
+
+                <div class="memo-metadata">
+                    <div class="memo-metadata-item">
+                        <i data-lucide="calendar-plus"></i>
+                        <span>${createdDate}</span>
+                    </div>
+                    <div class="memo-metadata-item">
+                        <i data-lucide="calendar-check"></i>
+                        <span>${updatedDate}</span>
+                    </div>
+                    ${userEmail ? `
+                    <div class="memo-metadata-item">
+                        <i data-lucide="user"></i>
+                        <span>${userEmail}</span>
+                    </div>
+                    ` : ''}
+                    ${tagsHTML ? `<div class="memo-tags">${tagsHTML}</div>` : ''}
                 </div>
             </div>
         `;
@@ -258,6 +326,81 @@ function highlightMatch(text, query) {
     const regex = new RegExp(`(${query})`, 'gi');
     return text.replace(regex, '<span class="highlight">$1</span>');
 }
+
+// Actions Logic
+window.toggleMemoContent = function (id) {
+    if (expandedMemoIds.has(id)) {
+        expandedMemoIds.delete(id);
+    } else {
+        expandedMemoIds.add(id);
+    }
+    renderMemos();
+    lucide.createIcons();
+};
+
+window.togglePinMemo = async function (id) {
+    const memo = memos.find(m => m.id === id);
+    if (!memo) return;
+
+    memo.is_pinned = !memo.is_pinned;
+
+    // Optimistic UI update
+    renderMemos();
+    lucide.createIcons();
+
+    // Persist if possible
+    const client = window.getSupabase();
+    try {
+        await client.from('memos').update({ is_pinned: memo.is_pinned }).eq('id', id);
+    } catch (err) {
+        console.warn("Pin persistence failed (column might not exist):", err);
+    }
+};
+
+window.archiveMemo = async function (id) {
+    if (!confirm('このメモをアーカイブしますか？（現在は非表示にするだけです）')) return;
+
+    // Local mock: just remove from list
+    memos = memos.filter(m => m.id !== id);
+    renderMemos();
+    lucide.createIcons();
+
+    // In a real app, update is_archived = true in DB
+};
+
+window.copyMemo = function (id) {
+    const memo = memos.find(m => m.id === id);
+    if (!memo) return;
+
+    navigator.clipboard.writeText(memo.content).then(() => {
+        alert('メモをクリップボードにコピーしました');
+    });
+};
+
+window.printMemo = function (id) {
+    const memo = memos.find(m => m.id === id);
+    if (!memo) return;
+
+    const printWindow = window.open('', '_blank');
+    printWindow.document.write(`
+        <html>
+            <head>
+                <title>Print Memo</title>
+                <style>
+                    body { font-family: sans-serif; padding: 20px; line-height: 1.6; }
+                    .title { font-size: 24px; font-weight: bold; border-bottom: 2px solid #ccc; padding-bottom: 10px; margin-bottom: 20px; }
+                    .content { white-space: pre-wrap; }
+                </style>
+            </head>
+            <body>
+                <div class="title">${memo.content.split('\n')[0] || 'Untitled'}</div>
+                <div class="content">${memo.content}</div>
+            </body>
+        </html>
+    `);
+    printWindow.document.close();
+    printWindow.print();
+};
 
 // Logic - Filtering
 window.setTagFilter = function (tagId) {
