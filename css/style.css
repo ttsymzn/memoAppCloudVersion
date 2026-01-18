@@ -759,6 +759,35 @@ body {
     opacity: 0;
 }
 
+/* Vertical Resizer */
+.resizer-v {
+    height: 8px;
+    cursor: row-resize;
+    background: transparent;
+    transition: background 0.2s;
+    margin: 4px 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.resizer-v:hover {
+    background: rgba(255, 255, 255, 0.05);
+}
+
+.resizer-v::after {
+    content: '';
+    width: 40px;
+    height: 4px;
+    background: var(--glass-border);
+    border-radius: 2px;
+}
+
+.resizer-v:hover::after {
+    background: var(--primary-light);
+}
+
 /* Quick Tag Creator */
 .quick-tag-creator {
     margin: 1rem 0;

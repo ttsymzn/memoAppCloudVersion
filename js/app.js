@@ -78,6 +78,8 @@ const mobileSidebarToggle = document.getElementById('mobile-sidebar-toggle');
 const closeSidebarBtn = document.getElementById('close-sidebar');
 const sidebarOverlay = document.getElementById('sidebar-overlay');
 const sidebar = document.querySelector('.sidebar');
+const editorResizer = document.getElementById('editor-resizer');
+const editorBody = document.querySelector('.editor-body');
 
 // Initialize
 async function init() {
@@ -111,6 +113,8 @@ async function init() {
     } else {
         onUserLoggedOut();
     }
+
+    initResizer();
 }
 
 async function onUserLoggedIn() {
@@ -1087,3 +1091,42 @@ document.addEventListener('DOMContentLoaded', async () => {
     loadUIState();
     await init();
 });
+
+function initResizer() {
+    if (!editorResizer || !editorBody) return;
+
+    let isResizing = false;
+    let startY = 0;
+    let startHeight = 0;
+
+    editorResizer.addEventListener('mousedown', (e) => {
+        isResizing = true;
+        startY = e.clientY;
+        startHeight = editorBody.offsetHeight;
+        document.body.style.cursor = 'row-resize';
+        document.body.style.userSelect = 'none';
+
+        editorResizer.classList.add('resizing');
+    });
+
+    document.addEventListener('mousemove', (e) => {
+        if (!isResizing) return;
+
+        const deltaY = e.clientY - startY;
+        const newHeight = startHeight + deltaY;
+
+        // Constraints: 100px to 80vh (approx)
+        if (newHeight > 100 && newHeight < window.innerHeight * 0.8) {
+            editorBody.style.flex = 'none'; // Overwrite flex: 1
+            editorBody.style.height = `${newHeight}px`;
+        }
+    });
+
+    document.addEventListener('mouseup', () => {
+        if (!isResizing) return;
+        isResizing = false;
+        document.body.style.cursor = '';
+        document.body.style.userSelect = '';
+        editorResizer.classList.remove('resizing');
+    });
+}
