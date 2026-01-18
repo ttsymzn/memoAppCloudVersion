@@ -989,6 +989,7 @@ function openMobileSidebar() {
     sidebar.classList.add('open');
     sidebarOverlay.classList.remove('hidden');
     document.body.style.overflow = 'hidden'; // Prevent scrolling
+    lucide.createIcons(); // Ensure icons in sidebar are rendered
 }
 
 function closeMobileSidebar() {
@@ -997,20 +998,23 @@ function closeMobileSidebar() {
     document.body.style.overflow = '';
 }
 
-if (mobileSidebarToggle) {
-    mobileSidebarToggle.addEventListener('click', openMobileSidebar);
-}
+function initMobileSidebar() {
+    if (mobileSidebarToggle) {
+        mobileSidebarToggle.addEventListener('click', openMobileSidebar);
+    }
 
-if (closeSidebarBtn) {
-    closeSidebarBtn.addEventListener('click', closeMobileSidebar);
-}
+    if (closeSidebarBtn) {
+        closeSidebarBtn.addEventListener('click', closeMobileSidebar);
+    }
 
-if (sidebarOverlay) {
-    sidebarOverlay.addEventListener('click', closeMobileSidebar);
+    if (sidebarOverlay) {
+        sidebarOverlay.addEventListener('click', closeMobileSidebar);
+    }
 }
 
 // Start
 document.addEventListener('DOMContentLoaded', async () => {
+    initMobileSidebar();
     loadUIState();
     await init();
 });

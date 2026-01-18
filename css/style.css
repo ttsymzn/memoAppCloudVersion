@@ -61,6 +61,7 @@ body {
     flex-direction: column;
     gap: 2rem;
     border-right: 1px solid var(--glass-border);
+    background: var(--glass-bg); /* Explicit background for mobile drawer */
 }
 
 .logo {
@@ -414,7 +415,6 @@ body {
 
 .memo-card.expanded .memo-content-full {
     max-height: 1000px;
-    /* Large enough to fit content */
     opacity: 1;
     margin-top: 0.75rem;
     margin-bottom: 0.5rem;
@@ -545,10 +545,8 @@ body {
     position: relative;
     resize: both;
     overflow: hidden;
-    /* Necessary for resize: both to work correctly with padding */
 }
 
-/* Ensure children handle the resize */
 .editor-body {
     flex: 1;
     margin: 1rem 0;
@@ -993,6 +991,7 @@ kbd {
 .memo-card {
     animation: fadeIn 0.4s ease-out forwards;
 }
+
 /* Responsive Design */
 .sidebar-toggle-btn {
     background: transparent;
@@ -1005,6 +1004,7 @@ kbd {
     justify-content: center;
     border-radius: 8px;
     transition: background 0.2s;
+    z-index: 1001; /* Above almost everything */
 }
 
 .sidebar-toggle-btn:hover {
@@ -1017,11 +1017,11 @@ kbd {
 }
 
 .mobile-only {
-    display: none;
+    display: none !important;
 }
 
 .close-only {
-    display: none;
+    display: none !important;
 }
 
 .sidebar-overlay {
@@ -1030,9 +1030,9 @@ kbd {
     left: 0;
     width: 100%;
     height: 100%;
-    background: rgba(0, 0, 0, 0.5);
-    backdrop-filter: blur(4px);
-    z-index: 900;
+    background: rgba(0, 0, 0, 0.6);
+    backdrop-filter: blur(8px);
+    z-index: 999;
     transition: opacity 0.3s ease;
 }
 
@@ -1047,38 +1047,35 @@ kbd {
     gap: 1rem;
 }
 
-@media (max-width: 1024px) {
+@media (max-width: 992px) {
     .app-container {
-        grid-template-columns: 240px 1fr;
-    }
-}
-
-@media (max-width: 768px) {
-    .app-container {
-        grid-template-columns: 1fr;
+        grid-template-columns: 1fr !important;
     }
 
     .sidebar {
-        position: fixed;
+        position: fixed !important;
         top: 0;
-        left: -300px;
-        width: 280px;
-        height: 100%;
-        z-index: 1000;
-        transition: left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-        padding: 1.5rem;
+        left: -320px !important;
+        width: 300px !important;
+        height: 100% !important;
+        z-index: 1000 !important;
+        transition: left 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+        padding: 1.5rem !important;
+        background: var(--bg-dark) !important; /* Solid background for mobile drawer */
+        border-right: 1px solid var(--glass-border);
     }
 
     .sidebar.open {
-        left: 0;
+        left: 0 !important;
+        box-shadow: 10px 0 50px rgba(0, 0, 0, 0.5);
     }
 
     .mobile-only {
-        display: flex;
+        display: flex !important;
     }
 
     .close-only {
-        display: flex;
+        display: flex !important;
     }
 
     .app-header {
@@ -1088,7 +1085,7 @@ kbd {
     }
 
     .main-content {
-        padding: 1rem;
+        padding: 1rem !important;
     }
 
     .content-header {
@@ -1106,11 +1103,11 @@ kbd {
 
     /* Editor Mobile Adjustments */
     .editor-content {
-        width: 95%;
-        height: 90vh;
-        min-width: unset;
-        padding: 1.25rem;
-        border-radius: 16px;
+        width: 95% !important;
+        height: 90vh !important;
+        min-width: unset !important;
+        padding: 1.25rem !important;
+        border-radius: 16px !important;
     }
 
     .memo-meta {
@@ -1124,8 +1121,8 @@ kbd {
 
     /* Modals Mobile Adjustments */
     .modal-content {
-        width: 90%;
-        padding: 1.5rem;
+        width: 90% !important;
+        padding: 1.5rem !important;
     }
 
     .input-row {
@@ -1141,11 +1138,11 @@ kbd {
 /* Touch Device Optimization */
 @media (hover: none) {
     .memo-actions {
-        opacity: 1;
+        opacity: 1 !important;
     }
 
     .edit-tag-btn {
-        opacity: 0.6;
+        opacity: 0.6 !important;
     }
     
     .tag-item:active {
