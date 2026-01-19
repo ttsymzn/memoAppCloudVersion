@@ -633,43 +633,9 @@ body {
     display: none !important;
 }
 
-/* Tag Editor in Memo Modal */
-.memo-tags-editor {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.5rem;
-    margin-bottom: 1rem;
-}
 
-.editor-tags-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 1rem;
-    width: 100%;
-}
 
-.tag-badge {
-    padding: 0.4rem 0.8rem;
-    border-radius: 20px;
-    font-size: 0.85rem;
-    background: rgba(255, 255, 255, 0.05);
-    border: 1px solid var(--glass-border);
-    cursor: pointer;
-    transition: all 0.2s ease;
-    user-select: none;
-}
 
-.tag-badge:hover {
-    background: rgba(255, 255, 255, 0.1);
-}
-
-.tag-badge.selected {
-    background: var(--tag-color);
-    border-color: rgba(255, 255, 255, 0.3);
-    color: white;
-    box-shadow: 0 4px 12px -2px var(--tag-color);
-}
 
 /* Modals */
 .modal-overlay {
@@ -892,11 +858,22 @@ body {
 .memo-tags-editor {
     display: flex;
     flex-direction: column;
-    gap: 1.5rem;
+    gap: 1.25rem;
     margin-bottom: 1rem;
-    max-height: 300px;
+    max-height: 350px;
     overflow-y: auto;
-    padding-right: 0.5rem;
+    padding-right: 0.75rem;
+    scrollbar-width: thin;
+    scrollbar-color: var(--glass-border) transparent;
+}
+
+.editor-tags-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+    padding-bottom: 0.5rem;
+    border-bottom: 1px solid var(--glass-border);
 }
 
 .editor-tag-group {
@@ -949,6 +926,7 @@ body {
     background: var(--tag-color);
     border-color: rgba(255, 255, 255, 0.3);
     color: white;
+    box-shadow: 0 4px 12px -2px var(--tag-color);
 }
 
 .tag-badge.selected .dot {
