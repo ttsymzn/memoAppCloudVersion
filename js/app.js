@@ -350,8 +350,12 @@ function renderMemos() {
         const highlightedBody = highlightMatch(bodyContent, searchQuery);
 
         // Linkify URLs, file paths, and emails
-        const linkedTitle = searchQuery ? highlightedTitle : linkify(title);
-        const linkedBody = searchQuery ? highlightedBody : linkify(bodyContent);
+        let linkedTitle = searchQuery ? highlightedTitle : linkify(title);
+        let linkedBody = searchQuery ? highlightedBody : linkify(bodyContent);
+
+        // Render checkboxes (apply after linkify to avoid conflicts)
+        linkedTitle = renderCheckboxes(linkedTitle);
+        linkedBody = renderCheckboxes(linkedBody);
 
         // Format dates
         const createdDate = memo.created_at ? new Date(memo.created_at).toLocaleDateString('ja-JP', {
@@ -488,6 +492,19 @@ function linkify(text) {
     });
 
     return result;
+}
+
+// Render checkboxes visually in memo content
+function renderCheckboxes(text) {
+    if (!text) return text;
+
+    // Replace completed checkboxes: [x], [X], ｘ
+    text = text.replace(/^\s*(\[x\]|\[X\]|ｘ)\s*/gim, '<span class="checkbox checked"><i data-lucide="check-square"></i></span> ');
+
+    // Replace uncompleted checkboxes: [ ]
+    text = text.replace(/^\s*\[\s*\]\s*/gm, '<span class="checkbox unchecked"><i data-lucide="square"></i></span> ');
+
+    return text;
 }
 
 
@@ -883,6 +900,140 @@ memoTextarea.addEventListener('input', () => {
     autoSaveTimeout = setTimeout(() => {
         performSave(true);
     }, 1500); // 1.5 seconds delay
+});
+
+// TODONE Management Feature
+// Detect if a line is a completed task (starts with [x], [X], or ｘ)
+function isCompletedTask(line) {
+    const trimmed = line.trim();
+    return /^(\[x\]|\[X\]|ｘ)/i.test(trimmed);
+}
+
+// Get the current line where cursor is positioned
+function getCurrentLine(textarea) {
+    const cursorPos = textarea.selectionStart;
+    const textBeforeCursor = textarea.value.substring(0, cursorPos);
+    const lines = textarea.value.split('\n');
+    const linesBefore = textBeforeCursor.split('\n');
+    const currentLineIndex = linesBefore.length - 1;
+
+    return {
+        lineIndex: currentLineIndex,
+        lineText: lines[currentLineIndex],
+        allLines: lines
+    };
+}
+
+// Get today's DONE memo title
+function getTodayDoneMemoTitle() {
+    const today = new Date();
+    const dateStr = today.toLocaleDateString('ja-JP', {
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit'
+    }).replace(/\//g, '-');
+    return `DONE ${dateStr}`;
+}
+
+// Find or create today's DONE memo
+async function findOrCreateDoneMemo() {
+    const client = window.getSupabase();
+    const userId = window.authManager.getUserId();
+    const doneTitle = getTodayDoneMemoTitle();
+
+    // Search for existing DONE memo
+    let doneMemo = memos.find(m => m.content.startsWith(doneTitle));
+
+    if (!doneMemo) {
+        // Create new DONE memo
+        const payload = {
+            content: doneTitle,
+            tags: [],
+            is_public: false,
+            user_id: userId,
+            updated_at: new Date().toISOString()
+        };
+
+        const { data, error } = await client.from('memos').insert([payload]).select();
+        if (error) {
+            console.error('Failed to create DONE memo:', error);
+            return null;
+        }
+
+        doneMemo = data[0];
+        await fetchData(); // Refresh memos list
+    }
+
+    return doneMemo;
+}
+
+// Move completed task to DONE memo
+async function moveTaskToDone() {
+    if (!currentEditingMemoId) return;
+
+    const currentLine = getCurrentLine(memoTextarea);
+
+    // Check if current line is a completed task
+    if (!isCompletedTask(currentLine.lineText)) {
+        alert('カーソルのある行は完了タスク（[x]、[X]、ｘで始まる行）ではありません。');
+        return;
+    }
+
+    try {
+        // Find or create DONE memo
+        const doneMemo = await findOrCreateDoneMemo();
+        if (!doneMemo) {
+            alert('DONEメモの作成に失敗しました。');
+            return;
+        }
+
+        // Remove the completed task from current memo
+        const updatedLines = currentLine.allLines.filter((_, index) => index !== currentLine.lineIndex);
+        const newContent = updatedLines.join('\n');
+
+        // Add task to DONE memo
+        const taskText = currentLine.lineText.trim();
+        const doneContent = doneMemo.content + '\n' + taskText;
+
+        const client = window.getSupabase();
+
+        // Update current memo
+        await client.from('memos').update({
+            content: newContent,
+            updated_at: new Date().toISOString()
+        }).eq('id', currentEditingMemoId);
+
+        // Update DONE memo
+        await client.from('memos').update({
+            content: doneContent,
+            updated_at: new Date().toISOString()
+        }).eq('id', doneMemo.id);
+
+        // Update UI
+        memoTextarea.value = newContent;
+        await fetchData();
+        render();
+
+        saveStatus.textContent = 'タスクをDONEメモに移動しました';
+        saveStatus.className = 'save-status saved';
+
+        setTimeout(() => {
+            saveStatus.textContent = '';
+        }, 3000);
+
+    } catch (error) {
+        console.error('Error moving task to DONE:', error);
+        alert('タスクの移動に失敗しました。');
+    }
+}
+
+// Add keyboard shortcut handler for Ctrl+E
+memoTextarea.addEventListener('keydown', (e) => {
+    // Ctrl+E (or Cmd+E on Mac)
+    if ((e.ctrlKey || e.metaKey) && e.key === 'e') {
+        e.preventDefault();
+        moveTaskToDone();
+    }
 });
 
 deleteMemoBtn.onclick = async () => {

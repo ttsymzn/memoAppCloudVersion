@@ -640,6 +640,35 @@ body {
     background: rgba(147, 197, 253, 0.1);
 }
 
+/* Checkbox Styling for TODONE Feature */
+.checkbox {
+    display: inline-flex;
+    align-items: center;
+    margin-right: 0.5rem;
+    transition: all 0.2s ease;
+}
+
+.checkbox i {
+    width: 16px;
+    height: 16px;
+}
+
+.checkbox.checked {
+    color: var(--success);
+}
+
+.checkbox.checked i {
+    stroke-width: 2.5;
+}
+
+.checkbox.unchecked {
+    color: var(--text-dim);
+}
+
+.checkbox:hover {
+    transform: scale(1.1);
+}
+
 /* Editor Styling */
 .editor-overlay {
     position: fixed;
