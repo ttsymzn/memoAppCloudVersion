@@ -841,7 +841,8 @@ body {
 
 /* Vertical Resizer */
 .resizer-v {
-    height: 8px;
+    height: 16px;
+    /* Increased for better touch target */
     cursor: row-resize;
     background: transparent;
     transition: background 0.2s;
@@ -850,6 +851,8 @@ body {
     align-items: center;
     justify-content: center;
     flex-shrink: 0;
+    touch-action: none;
+    /* Prevent default touch gestures */
 }
 
 .resizer-v:hover {
@@ -866,6 +869,10 @@ body {
 
 .resizer-v:hover::after {
     background: var(--primary-light);
+}
+
+.resizer-v.resizing::after {
+    background: var(--primary);
 }
 
 /* Quick Tag Creator */

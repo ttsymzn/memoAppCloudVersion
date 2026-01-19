@@ -1418,6 +1418,12 @@ function initResizer() {
     let startY = 0;
     let startHeight = 0;
 
+    // Helper function to get Y coordinate from mouse or touch event
+    const getClientY = (e) => {
+        return e.touches ? e.touches[0].clientY : e.clientY;
+    };
+
+    // Start resizing (mouse)
     editorResizer.addEventListener('mousedown', (e) => {
         isResizing = true;
         startY = e.clientY;
@@ -1428,6 +1434,18 @@ function initResizer() {
         editorResizer.classList.add('resizing');
     });
 
+    // Start resizing (touch)
+    editorResizer.addEventListener('touchstart', (e) => {
+        isResizing = true;
+        startY = e.touches[0].clientY;
+        startHeight = editorBody.offsetHeight;
+        document.body.style.userSelect = 'none';
+
+        editorResizer.classList.add('resizing');
+        e.preventDefault(); // Prevent scrolling while resizing
+    }, { passive: false });
+
+    // Handle resizing (mouse)
     document.addEventListener('mousemove', (e) => {
         if (!isResizing) return;
 
@@ -1441,10 +1459,33 @@ function initResizer() {
         }
     });
 
+    // Handle resizing (touch)
+    document.addEventListener('touchmove', (e) => {
+        if (!isResizing) return;
+
+        const deltaY = e.touches[0].clientY - startY;
+        const newHeight = startHeight + deltaY;
+
+        // Constraints: 100px to 80vh (approx)
+        if (newHeight > 100 && newHeight < window.innerHeight * 0.8) {
+            editorBody.style.flex = 'none'; // Overwrite flex: 1
+            editorBody.style.height = `${newHeight}px`;
+        }
+    }, { passive: false });
+
+    // End resizing (mouse)
     document.addEventListener('mouseup', () => {
         if (!isResizing) return;
         isResizing = false;
         document.body.style.cursor = '';
+        document.body.style.userSelect = '';
+        editorResizer.classList.remove('resizing');
+    });
+
+    // End resizing (touch)
+    document.addEventListener('touchend', () => {
+        if (!isResizing) return;
+        isResizing = false;
         document.body.style.userSelect = '';
         editorResizer.classList.remove('resizing');
     });
