@@ -1141,46 +1141,77 @@ csvImportInput.onchange = (e) => {
 
     const reader = new FileReader();
     reader.onload = async (event) => {
-        const text = event.target.result;
-        await processCSV(text);
+        const codes = new Uint8Array(event.target.result);
+        const encoding = Encoding.detect(codes);
+        const unicodeString = Encoding.convert(codes, {
+            to: 'UNICODE',
+            from: encoding,
+            type: 'string'
+        });
+        await processCSV(unicodeString);
         csvImportInput.value = ''; // Reset
     };
-    reader.readAsText(file);
+    reader.readAsArrayBuffer(file);
 };
 
 async function processCSV(csvText) {
     try {
-        const lines = csvText.split('\n');
-        const headers = lines[0].split(',').map(h => h.trim().replace(/"/g, ''));
+        const records = [];
+        let currentRecord = [];
+        let currentField = '';
+        let inQuotes = false;
 
+        // Robust CSV parser that handles newlines in quoted fields
+        for (let i = 0; i < csvText.length; i++) {
+            const char = csvText[i];
+            const nextChar = csvText[i + 1];
+
+            if (inQuotes) {
+                if (char === '"') {
+                    if (nextChar === '"') {
+                        currentField += '"';
+                        i++; // Skip the next quote
+                    } else {
+                        inQuotes = false;
+                    }
+                } else {
+                    currentField += char;
+                }
+            } else {
+                if (char === '"') {
+                    inQuotes = true;
+                } else if (char === ',') {
+                    currentRecord.push(currentField);
+                    currentField = '';
+                } else if (char === '\n' || (char === '\r' && nextChar === '\n')) {
+                    if (char === '\r') i++; // Skip \n
+                    currentRecord.push(currentField);
+                    records.push(currentRecord);
+                    currentRecord = [];
+                    currentField = '';
+                } else {
+                    currentField += char;
+                }
+            }
+        }
+        // Handle final field and record if they weren't matched (e.g., no trailing newline)
+        if (currentField !== '' || currentRecord.length > 0) {
+            currentRecord.push(currentField);
+            records.push(currentRecord);
+        }
+
+        if (records.length < 2) {
+            alert('インポートするデータが見当たらないか、形式が正しくありません。');
+            return;
+        }
+
+        const headers = records[0].map(h => h.trim().replace(/"/g, ''));
         const memosToImport = [];
         const userId = window.authManager.getUserId();
 
-        for (let i = 1; i < lines.length; i++) {
-            const line = lines[i].trim();
-            if (!line) continue;
-
-            // Simple CSV parser that handles quotes
-            const values = [];
-            let current = '';
-            let inQuotes = false;
-            for (let j = 0; j < line.length; j++) {
-                const char = line[j];
-                if (char === '"') {
-                    if (inQuotes && line[j + 1] === '"') {
-                        current += '"';
-                        j++;
-                    } else {
-                        inQuotes = !inQuotes;
-                    }
-                } else if (char === ',' && !inQuotes) {
-                    values.push(current);
-                    current = '';
-                } else {
-                    current += char;
-                }
-            }
-            values.push(current);
+        for (let i = 1; i < records.length; i++) {
+            const values = records[i];
+            if (values.length < headers.length) continue;
 
             const memo = { user_id: userId };
             headers.forEach((header, index) => {
