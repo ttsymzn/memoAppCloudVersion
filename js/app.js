@@ -1109,8 +1109,11 @@ exportCsvBtn.onclick = async () => {
             csvRows.push(row.join(','));
         }
 
-        const csvContent = "\uFEFF" + csvRows.join('\n');
-        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        const csvString = csvRows.join('\r\n');
+        const unicodeArray = Encoding.stringToCode(csvString);
+        const sjisCodeArray = Encoding.convert(unicodeArray, 'SJIS', 'UNICODE');
+        const sjisUint8Array = new Uint8Array(sjisCodeArray);
+        const blob = new Blob([sjisUint8Array], { type: 'text/csv;charset=shift-jis' });
         const url = URL.createObjectURL(blob);
         const link = document.createElement('a');
         link.setAttribute('href', url);
