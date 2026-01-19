@@ -601,6 +601,45 @@ body {
     border: 1px solid rgba(255, 255, 255, 0.05);
 }
 
+/* Memo Links Styling */
+.memo-link {
+    color: var(--primary-light);
+    text-decoration: none;
+    border-bottom: 1px solid rgba(167, 139, 250, 0.3);
+    transition: all 0.2s ease;
+    word-break: break-all;
+    display: inline;
+    padding: 0 2px;
+}
+
+.memo-link:hover {
+    color: #c4b5fd;
+    border-bottom-color: var(--primary-light);
+    background: rgba(167, 139, 250, 0.1);
+}
+
+.memo-link.file-link {
+    color: #6ee7b7;
+    border-bottom-color: rgba(110, 231, 183, 0.3);
+}
+
+.memo-link.file-link:hover {
+    color: #86efac;
+    border-bottom-color: #6ee7b7;
+    background: rgba(110, 231, 183, 0.1);
+}
+
+.memo-link.email-link {
+    color: #93c5fd;
+    border-bottom-color: rgba(147, 197, 253, 0.3);
+}
+
+.memo-link.email-link:hover {
+    color: #bfdbfe;
+    border-bottom-color: #93c5fd;
+    background: rgba(147, 197, 253, 0.1);
+}
+
 /* Editor Styling */
 .editor-overlay {
     position: fixed;

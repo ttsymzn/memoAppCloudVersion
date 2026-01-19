@@ -349,6 +349,10 @@ function renderMemos() {
         const highlightedTitle = highlightMatch(title, searchQuery);
         const highlightedBody = highlightMatch(bodyContent, searchQuery);
 
+        // Linkify URLs, file paths, and emails
+        const linkedTitle = searchQuery ? highlightedTitle : linkify(title);
+        const linkedBody = searchQuery ? highlightedBody : linkify(bodyContent);
+
         // Format dates
         const createdDate = memo.created_at ? new Date(memo.created_at).toLocaleDateString('ja-JP', {
             year: 'numeric', month: '2-digit', day: '2-digit'
@@ -377,11 +381,11 @@ function renderMemos() {
                 ${isPinned ? '<div class="pin-indicator"><i data-lucide="pin"></i></div>' : ''}
                 
                 <div class="memo-header">
-                    <div class="memo-title">${highlightedTitle}</div>
+                    <div class="memo-title">${linkedTitle}</div>
                 </div>
 
                 <div class="memo-content-full">
-                    ${highlightedBody ? `<div class="memo-body-full">${highlightedBody.replace(/\n/g, '<br>')}</div>` : '<div class="memo-body-empty">本文なし</div>'}
+                    ${linkedBody ? `<div class="memo-body-full">${linkedBody.replace(/\n/g, '<br>')}</div>` : '<div class="memo-body-empty">本文なし</div>'}
                 </div>
 
                 <div class="memo-metadata">
@@ -435,6 +439,57 @@ function highlightMatch(text, query) {
     const regex = new RegExp(`(${query})`, 'gi');
     return text.replace(regex, '<span class="highlight">$1</span>');
 }
+
+// Convert URLs, file paths, and emails into clickable links
+function linkify(text) {
+    if (!text) return text;
+
+    // Escape HTML to prevent XSS
+    const escapeHtml = (str) => {
+        const div = document.createElement('div');
+        div.textContent = str;
+        return div.innerHTML;
+    };
+
+    let result = escapeHtml(text);
+
+    // Process in order to avoid conflicts:
+    // 1. First, convert file:// URLs (most specific)
+    const filePattern = /(file:\/\/[^\s<]+)/gi;
+    result = result.replace(filePattern, (fileUrl) => {
+        return `<a href="${fileUrl}" class="memo-link file-link" onclick="event.stopPropagation()" title="ファイルを開く">${fileUrl}</a>`;
+    });
+
+    // 2. Convert http/https URLs and www. links
+    const urlPattern = /(https?:\/\/[^\s<]+|www\.[^\s<]+)/gi;
+    result = result.replace(urlPattern, (url) => {
+        const href = url.startsWith('www.') ? 'http://' + url : url;
+        return `<a href="${href}" target="_blank" rel="noopener noreferrer" class="memo-link" onclick="event.stopPropagation()">${url}</a>`;
+    });
+
+    // 3. Convert email addresses
+    const emailPattern = /\b([a-zA-Z0-9._-]+@[a-zA-Z0-9._-]+\.[a-zA-Z0-9_-]+)\b/gi;
+    result = result.replace(emailPattern, (match, email) => {
+        // Skip if already part of a link
+        if (result.indexOf(`>${email}<`) !== -1) return match;
+        return `<a href="mailto:${email}" class="memo-link email-link" onclick="event.stopPropagation()">${email}</a>`;
+    });
+
+    // 4. Convert absolute file paths (more conservative approach)
+    // Only match paths that look like actual file paths
+    // Linux/Mac: /home/user/file.txt, /usr/bin/app
+    // Windows: C:\Users\file.txt, D:\Documents\file.pdf
+    const absolutePathPattern = /\b((?:\/(?:home|usr|var|etc|opt|tmp)\/[^\s<]+)|(?:[A-Z]:\\(?:Users|Program Files|Documents|Windows)[^\s<]+))\b/g;
+    result = result.replace(absolutePathPattern, (path) => {
+        // Skip if it's already part of a link or URL
+        if (result.indexOf(`>${path}<`) !== -1 || result.indexOf(`href="${path}"`) !== -1) return path;
+        const fileUrl = `file://${path}`;
+        return `<a href="${fileUrl}" class="memo-link file-link" onclick="event.stopPropagation()" title="ファイルを開く: ${path}">${path}</a>`;
+    });
+
+    return result;
+}
+
 
 // Actions Logic
 window.toggleMemoContent = function (id) {
