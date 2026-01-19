@@ -1,0 +1,51 @@
+/* Pull to Refresh */
+.pull-to-refresh {
+    height: 0;
+    overflow: hidden;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    transition: height 0.1s ease-out;
+    /* snap back handled by JS or CSS when releasing */
+    opacity: 0.8;
+    width: 100%;
+}
+
+/* When refreshing, we lock the height */
+.pull-to-refresh.refreshing {
+    height: 60px !important;
+    transition: height 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.ptr-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: transform 0.1s linear, color 0.2s;
+    color: var(--text-dim);
+}
+
+.ptr-icon i {
+    width: 24px;
+    height: 24px;
+}
+
+.ptr-icon.rotate {
+    animation: spin 1s linear infinite;
+    color: var(--primary-light);
+}
+
+@keyframes spin {
+    from {
+        transform: rotate(0deg);
+    }
+
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+/* Prevent native pull-to-refresh on mobile */
+.main-content {
+    overscroll-behavior-y: contain;
+}

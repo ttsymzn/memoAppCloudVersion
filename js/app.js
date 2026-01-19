@@ -129,6 +129,7 @@ async function init() {
     }
 
     initResizer();
+    initPullToRefresh();
 }
 
 async function onUserLoggedIn() {
@@ -1840,5 +1841,107 @@ function initResizer() {
         isResizing = false;
         document.body.style.userSelect = '';
         editorResizer.classList.remove('resizing');
+    });
+}
+
+// Pull to Refresh Logic
+function initPullToRefresh() {
+    const mainContent = document.querySelector('.main-content');
+    const ptrElement = document.getElementById('pull-to-refresh');
+    const ptrIcon = ptrElement.querySelector('.ptr-icon');
+    let startY = 0;
+    let isPulling = false;
+    let isRefreshing = false;
+    
+    // Only enable on touch devices/screens
+    // But for testing we just attach events, they won't fire on mouse unless simulated
+    
+    mainContent.addEventListener('touchstart', (e) => {
+        if (mainContent.scrollTop <= 1 && !isRefreshing) {
+            startY = e.touches[0].clientY;
+            isPulling = true;
+            // Reset transition for direct control
+            ptrElement.style.transition = 'none'; 
+        }
+    }, { passive: true });
+
+    mainContent.addEventListener('touchmove', (e) => {
+        if (!isPulling || isRefreshing) return;
+        
+        const currentY = e.touches[0].clientY;
+        const diff = currentY - startY;
+
+        // Only handle pull down logic
+        if (diff > 0 && mainContent.scrollTop <= 0) {
+            // Cancel default scrolling to prevent overscroll effects behavior (if browser supports)
+            if (e.cancelable) {
+                e.preventDefault();
+            }
+            
+            // Add resistance (logarithmic or square root)
+            // diff * 0.4 makes it feel heavier
+            const pullDistance = Math.min(diff * 0.4, 150); 
+            
+            ptrElement.style.height = `${pullDistance}px`;
+            
+            // Rotate the icon
+            ptrIcon.style.transform = `rotate(${pullDistance * 2}deg)`;
+            
+            // Color change threshold
+            if (pullDistance > 60) {
+                ptrIcon.style.color = 'var(--primary-light)';
+            } else {
+                ptrIcon.style.color = 'var(--text-dim)';
+            }
+        } else {
+            // If user scrolls back up while pulling, reset
+            // But we might be strictly in the "pulling" phase.
+            // If they scroll data content up, scrollTop increases -> regular scroll
+            isPulling = false;
+            ptrElement.style.height = '0px';
+        }
+    }, { passive: false }); // passive: false needed for preventDefault
+
+    mainContent.addEventListener('touchend', async () => {
+        if (!isPulling || isRefreshing) return;
+        isPulling = false;
+        
+        // Restore transition for smooth snap back
+        ptrElement.style.transition = 'height 0.3s cubic-bezier(0.4, 0, 0.2, 1)';
+        
+        const currentHeight = parseInt(ptrElement.style.height || '0');
+        
+        if (currentHeight > 60) {
+            // Trigger refresh
+            isRefreshing = true;
+            ptrElement.classList.add('refreshing'); // Force height to 60px
+            ptrIcon.classList.add('rotate');
+            ptrElement.style.height = ''; // Let CSS class handle the height 
+
+            try {
+                // Minimum delay to show animation
+                const fetchPromise = fetchData();
+                const timeoutPromise = new Promise(resolve => setTimeout(resolve, 800));
+                
+                await Promise.all([fetchPromise, timeoutPromise]);
+                render();
+            } catch(e) {
+                console.error("Refresh failed", e);
+            } finally {
+                // Reset
+                ptrElement.classList.remove('refreshing');
+                ptrIcon.classList.remove('rotate');
+                ptrElement.style.height = '0px';
+                isRefreshing = false;
+                
+                // Reset icon rotation after transition
+                setTimeout(() => {
+                    ptrIcon.style.transform = 'rotate(0deg)';
+                }, 300);
+            }
+        } else {
+            // Cancel pull
+            ptrElement.style.height = '0px';
+        }
     });
 }
