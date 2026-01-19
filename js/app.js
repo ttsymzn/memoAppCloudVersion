@@ -345,17 +345,19 @@ function renderMemos() {
         const isExpanded = searchQuery.trim() !== '' || expandedMemoIds.has(memo.id);
         const isSelected = index === selectedMemoIndex;
 
-        // Highlighting
-        const highlightedTitle = highlightMatch(title, searchQuery);
-        const highlightedBody = highlightMatch(bodyContent, searchQuery);
+        // Highlighting and Markdown rendering
+        let renderedTitle, renderedBody;
 
-        // Linkify URLs, file paths, and emails
-        let linkedTitle = searchQuery ? highlightedTitle : linkify(title);
-        let linkedBody = searchQuery ? highlightedBody : linkify(bodyContent);
-
-        // Render checkboxes (apply after linkify to avoid conflicts)
-        linkedTitle = renderCheckboxes(linkedTitle);
-        linkedBody = renderCheckboxes(linkedBody);
+        if (searchQuery) {
+            renderedTitle = highlightMatch(title, searchQuery);
+            renderedBody = highlightMatch(bodyContent, searchQuery);
+            // Even when searching, we can apply basic linkify and checkboxes
+            renderedTitle = renderCheckboxes(linkifyMarkdown(renderedTitle));
+            renderedBody = renderCheckboxes(linkifyMarkdown(renderedBody));
+        } else {
+            renderedTitle = parseMarkdown(title);
+            renderedBody = parseMarkdown(bodyContent);
+        }
 
         // Format dates
         const createdDate = memo.created_at ? new Date(memo.created_at).toLocaleDateString('ja-JP', {
@@ -385,11 +387,11 @@ function renderMemos() {
                 ${isPinned ? '<div class="pin-indicator"><i data-lucide="pin"></i></div>' : ''}
                 
                 <div class="memo-header">
-                    <div class="memo-title">${linkedTitle}</div>
+                    <div class="memo-title">${renderedTitle}</div>
                 </div>
 
                 <div class="memo-content-full">
-                    ${linkedBody ? `<div class="memo-body-full">${linkedBody.replace(/\n/g, '<br>')}</div>` : '<div class="memo-body-empty">本文なし</div>'}
+                    ${renderedBody ? `<div class="memo-body-full">${renderedBody.replace(/\n/g, '<br>')}</div>` : '<div class="memo-body-empty">本文なし</div>'}
                 </div>
 
                 <div class="memo-metadata">
@@ -505,6 +507,150 @@ function renderCheckboxes(text) {
     text = text.replace(/^\s*\[\s*\]\s*/gm, '<span class="checkbox unchecked"><i data-lucide="square"></i></span> ');
 
     return text;
+}
+
+// Parse markdown to HTML
+function parseMarkdown(text) {
+    if (!text) return text;
+
+    // Escape HTML first
+    const escapeHtml = (str) => {
+        const div = document.createElement('div');
+        div.textContent = str;
+        return div.innerHTML;
+    };
+
+    let result = escapeHtml(text);
+
+    // Process in specific order to avoid conflicts
+
+    // 1. Code blocks (```) - must be processed before inline code
+    result = result.replace(/```([a-z]*)\n([\s\S]*?)```/g, (match, lang, code) => {
+        return `<pre><code class="language-${lang}">${code.trim()}</code></pre>`;
+    });
+
+    // 2. Inline code (`)
+    result = result.replace(/`([^`]+)`/g, '<code>$1</code>');
+
+    // 3. Headers (# ## ### #### ##### ######)
+    result = result.replace(/^######\s+(.+)$/gm, '<h6>$1</h6>');
+    result = result.replace(/^#####\s+(.+)$/gm, '<h5>$1</h5>');
+    result = result.replace(/^####\s+(.+)$/gm, '<h4>$1</h4>');
+    result = result.replace(/^###\s+(.+)$/gm, '<h3>$1</h3>');
+    result = result.replace(/^##\s+(.+)$/gm, '<h2>$1</h2>');
+    result = result.replace(/^#\s+(.+)$/gm, '<h1>$1</h1>');
+
+    // 4. Horizontal rule (---, ***, ___)
+    result = result.replace(/^(---|\*\*\*|___)\s*$/gm, '<hr>');
+
+    // 5. Bold and Italic (must be done before links to avoid conflicts)
+    // Bold with ** or __
+    result = result.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+    result = result.replace(/__(.+?)__/g, '<strong>$1</strong>');
+
+    // Italic with * or _
+    result = result.replace(/\*(.+?)\*/g, '<em>$1</em>');
+    result = result.replace(/_(.+?)_/g, '<em>$1</em>');
+
+    // 6. Strikethrough (~~)
+    result = result.replace(/~~(.+?)~~/g, '<del>$1</del>');
+
+    // 7. Blockquotes (>)
+    result = result.replace(/^&gt;\s+(.+)$/gm, '<blockquote>$1</blockquote>');
+
+    // 8. Unordered lists (-, *, +) and Ordered lists (1., 2., etc.)
+    const lines = result.split('\n');
+    let inList = false;
+    let listType = null;
+    const processedLines = [];
+
+    for (let i = 0; i < lines.length; i++) {
+        const line = lines[i];
+        const ulMatch = line.match(/^(\s*)([-*+])\s+(.+)$/);
+        const olMatch = line.match(/^(\s*)(\d+)\.\s+(.+)$/);
+
+        if (ulMatch) {
+            if (!inList || listType !== 'ul') {
+                if (inList) processedLines.push(`</${listType}>`);
+                processedLines.push('<ul>');
+                inList = true;
+                listType = 'ul';
+            }
+            processedLines.push(`<li>${ulMatch[3]}</li>`);
+        } else if (olMatch) {
+            if (!inList || listType !== 'ol') {
+                if (inList) processedLines.push(`</${listType}>`);
+                processedLines.push('<ol>');
+                inList = true;
+                listType = 'ol';
+            }
+            processedLines.push(`<li>${olMatch[3]}</li>`);
+        } else {
+            if (inList) {
+                processedLines.push(`</${listType}>`);
+                inList = false;
+                listType = null;
+            }
+            processedLines.push(line);
+        }
+    }
+
+    if (inList) {
+        processedLines.push(`</${listType}>`);
+    }
+
+    result = processedLines.join('\n');
+
+    // 9. Apply linkify (URLs, file paths, emails)
+    result = linkifyMarkdown(result);
+
+    // 10. Apply checkbox rendering
+    result = renderCheckboxes(result);
+
+    return result;
+}
+
+// Linkify function for markdown (modified to work with HTML)
+function linkifyMarkdown(text) {
+    if (!text) return text;
+
+    let result = text;
+
+    // 1. Convert file:// URLs
+    const filePattern = /(file:\/\/[^\s<]+)/gi;
+    result = result.replace(filePattern, (fileUrl) => {
+        // Skip if already in a tag
+        if (result.indexOf(`href="${fileUrl}"`) !== -1) return fileUrl;
+        return `<a href="${fileUrl}" class="memo-link file-link" onclick="event.stopPropagation()" title="ファイルを開く">${fileUrl}</a>`;
+    });
+
+    // 2. Convert http/https URLs and www. links
+    const urlPattern = /(https?:\/\/[^\s<]+|www\.[^\s<]+)/gi;
+    result = result.replace(urlPattern, (url) => {
+        // Skip if already in a tag
+        if (result.indexOf(`href="${url}"`) !== -1 || result.indexOf(`>${url}<`) !== -1) return url;
+        const href = url.startsWith('www.') ? 'http://' + url : url;
+        return `<a href="${href}" target="_blank" rel="noopener noreferrer" class="memo-link" onclick="event.stopPropagation()">${url}</a>`;
+    });
+
+    // 3. Convert email addresses
+    const emailPattern = /\b([a-zA-Z0-9._-]+@[a-zA-Z0-9._-]+\.[a-zA-Z0-9_-]+)\b/gi;
+    result = result.replace(emailPattern, (match, email) => {
+        // Skip if already part of a link
+        if (result.indexOf(`>${email}<`) !== -1) return match;
+        return `<a href="mailto:${email}" class="memo-link email-link" onclick="event.stopPropagation()">${email}</a>`;
+    });
+
+    // 4. Convert absolute file paths (conservative)
+    const absolutePathPattern = /\b((?:\/(?:home|usr|var|etc|opt|tmp)\/[^\s<]+)|(?:[A-Z]:\\(?:Users|Program Files|Documents|Windows)[^\s<]+))\b/g;
+    result = result.replace(absolutePathPattern, (path) => {
+        // Skip if already in a link or code
+        if (result.indexOf(`>${path}<`) !== -1 || result.indexOf(`href="${path}"`) !== -1) return path;
+        const fileUrl = `file://${path}`;
+        return `<a href="${fileUrl}" class="memo-link file-link" onclick="event.stopPropagation()" title="ファイルを開く: ${path}">${path}</a>`;
+    });
+
+    return result;
 }
 
 

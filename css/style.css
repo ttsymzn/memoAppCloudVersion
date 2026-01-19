@@ -669,6 +669,100 @@ body {
     transform: scale(1.1);
 }
 
+/* Markdown Styling */
+.memo-body-full h1,
+.memo-body-full h2,
+.memo-body-full h3 {
+    margin-top: 1rem;
+    margin-bottom: 0.5rem;
+    color: var(--primary-light);
+    font-family: var(--font-heading);
+}
+
+.memo-body-full h1 {
+    font-size: 1.4rem;
+    border-bottom: 1px solid var(--glass-border);
+    padding-bottom: 0.3rem;
+}
+
+.memo-body-full h2 {
+    font-size: 1.2rem;
+}
+
+.memo-body-full h3 {
+    font-size: 1.1rem;
+}
+
+.memo-body-full p {
+    margin-bottom: 0.75rem;
+}
+
+.memo-body-full ul,
+.memo-body-full ol {
+    margin-left: 1.5rem;
+    margin-bottom: 1rem;
+}
+
+.memo-body-full li {
+    margin-bottom: 0.25rem;
+}
+
+.memo-body-full blockquote {
+    border-left: 4px solid var(--primary);
+    padding: 0.5rem 1rem;
+    margin: 1rem 0;
+    background: rgba(255, 255, 255, 0.03);
+    border-radius: 0 8px 8px 0;
+    font-style: italic;
+    color: var(--text-dim);
+}
+
+.memo-body-full code {
+    background: rgba(255, 255, 255, 0.1);
+    padding: 0.2rem 0.4rem;
+    border-radius: 4px;
+    font-family: monospace;
+    font-size: 0.9em;
+    color: var(--primary-light);
+}
+
+.memo-body-full pre {
+    background: #1e1e1e;
+    padding: 1rem;
+    border-radius: 12px;
+    overflow-x: auto;
+    margin: 1rem 0;
+    border: 1px solid var(--glass-border);
+}
+
+.memo-body-full pre code {
+    background: transparent;
+    padding: 0;
+    color: #dcdcdc;
+    font-size: 0.85rem;
+}
+
+.memo-body-full hr {
+    border: none;
+    border-top: 1px solid var(--glass-border);
+    margin: 1.5rem 0;
+}
+
+.memo-body-full strong {
+    color: var(--primary-light);
+    font-weight: 700;
+}
+
+.memo-body-full em {
+    color: var(--text-main);
+    opacity: 0.9;
+}
+
+.memo-body-full del {
+    opacity: 0.5;
+    text-decoration: line-through;
+}
+
 /* Editor Styling */
 .editor-overlay {
     position: fixed;
