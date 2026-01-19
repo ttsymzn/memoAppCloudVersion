@@ -646,6 +646,9 @@ body {
     align-items: center;
     margin-right: 0.5rem;
     transition: all 0.2s ease;
+    vertical-align: middle;
+    position: relative;
+    top: -2px;
 }
 
 .checkbox i {
