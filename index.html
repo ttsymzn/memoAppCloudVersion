@@ -85,6 +85,10 @@
                         <span>Import CSV</span>
                     </button>
                     <input type="file" id="csv-import-input" accept=".csv" style="display: none;">
+                    <button id="open-snippets-btn" class="sidebar-btn">
+                        <i data-lucide="zap"></i>
+                        <span>Text Expander</span>
+                    </button>
                 </div>
                 <button id="help-btn" class="help-trigger">
                     <i data-lucide="help-circle"></i>
@@ -243,6 +247,47 @@
                     <div class="shortcut-row">
                         <span class="shortcut-desc">閉じる / キャンセル</span>
                         <kbd>Esc</kbd>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Text Expander Modal -->
+        <div id="snippet-modal" class="modal-overlay hidden">
+            <div class="modal-content glass-premium snippet-manager-card" style="max-width: 700px; width: 90%;">
+                <header class="modal-header">
+                    <h2>Text Expander Settings</h2>
+                    <button id="close-snippet-btn" class="icon-btn"><i data-lucide="x"></i></button>
+                </header>
+                <div class="snippet-body-layout"
+                    style="display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; margin-top: 1rem;">
+                    <div class="snippet-list-section">
+                        <div class="section-title-small" style="margin-bottom: 0.5rem;">My Snippets</div>
+                        <ul id="snippet-list" class="snippet-list"
+                            style="max-height: 400px; overflow-y: auto; display: flex; flex-direction: column; gap: 0.5rem; list-style: none;">
+                            <!-- Snippets loaded here -->
+                        </ul>
+                    </div>
+                    <div class="snippet-editor-form">
+                        <div class="section-title-small" style="margin-bottom: 0.5rem;">Add / Edit</div>
+                        <div class="input-group-vertical">
+                            <label>Keyword (Abbr)</label>
+                            <input type="text" id="snippet-keyword" placeholder="e.g. ;mail">
+                            <span class="input-hint" style="font-size: 0.75rem; color: var(--text-dim);">Trigger with
+                                space or
+                                punctuation</span>
+                        </div>
+                        <div class="input-group-vertical" style="margin-top: 1rem;">
+                            <label>Expansion Content</label>
+                            <textarea id="snippet-content" placeholder="The text to expand to..." rows="6"
+                                style="width: 100%; background: rgba(0,0,0,0.2); border: 1px solid var(--glass-border); color: var(--text-main); border-radius: 8px; padding: 0.5rem; resize: vertical;"></textarea>
+                        </div>
+                        <div class="modal-actions" style="margin-top: 1.5rem;">
+                            <button class="btn-danger-outline hidden" id="delete-snippet-btn">Delete</button>
+                            <div style="flex: 1;"></div>
+                            <button class="btn-secondary" id="clear-snippet-form">Clear</button>
+                            <button class="btn-primary" id="save-snippet-btn">Save</button>
+                        </div>
                     </div>
                 </div>
             </div>

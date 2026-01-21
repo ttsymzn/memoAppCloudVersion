@@ -62,6 +62,22 @@ let collapsedGroups = new Set();
 let autoSaveTimeout = null;
 let currentMemoIsPublic = false;
 
+// Snippet State
+let snippets = [];
+const SNIPPETS_STORAGE_KEY = 'memo_app_snippets';
+
+// Snippet DOM
+const openSnippetsBtn = document.getElementById('open-snippets-btn');
+const snippetModal = document.getElementById('snippet-modal');
+const closeSnippetBtn = document.getElementById('close-snippet-btn');
+const snippetList = document.getElementById('snippet-list');
+const snippetKeywordInput = document.getElementById('snippet-keyword');
+const snippetContentInput = document.getElementById('snippet-content');
+const saveSnippetBtn = document.getElementById('save-snippet-btn');
+const clearSnippetBtn = document.getElementById('clear-snippet-form');
+const deleteSnippetBtn = document.getElementById('delete-snippet-btn');
+let currentEditingSnippetId = null;
+
 // DOM Elements - Auth
 const authScreen = document.getElementById('auth-screen');
 const authForm = document.getElementById('auth-form');
@@ -130,6 +146,21 @@ async function init() {
 
     initResizer();
     initPullToRefresh();
+    loadSnippets(); // Load snippets on init
+}
+
+function loadSnippets() {
+    const json = localStorage.getItem(SNIPPETS_STORAGE_KEY);
+    if (json) {
+        snippets = JSON.parse(json);
+    } else {
+        // Default example
+        snippets = [
+            { id: 'default1', keyword: ';mail', content: 'my.email@example.com' },
+            { id: 'default2', keyword: ';date', content: (new Date()).toLocaleDateString() }
+        ];
+        saveSnippets();
+    }
 }
 
 async function onUserLoggedIn() {
@@ -1048,10 +1079,10 @@ memoTextarea.addEventListener('input', () => {
 });
 
 // TODONE Management Feature
-// Detect if a line is a completed task (starts with [x], [X], or ｘ)
+// Detect if a line is a completed task (starts with [x], [X], or x)
 function isCompletedTask(line) {
     const trimmed = line.trim();
-    return /^(\[x\]|\[X\]|ｘ)/i.test(trimmed);
+    return /^(\[x\]|\[X\]|x|「ｘ」)/i.test(trimmed);
 }
 
 // Get the current line where cursor is positioned
@@ -1942,4 +1973,146 @@ function initPullToRefresh() {
             ptrElement.style.height = '0px';
         }
     });
+}
+// Text Expander Logic
+
+// 1. Text Expansion Listeners
+memoTextarea.addEventListener('input', checkTextExpansion);
+
+function checkTextExpansion(e) {
+    if (!e.data && e.inputType !== 'insertText') return;
+
+    const cursor = memoTextarea.selectionStart;
+    const text = memoTextarea.value;
+    const textBefore = text.slice(0, cursor);
+
+    // We check the "word" immediately before the cursor.
+    // For simplicity, we treat the keyword as the contiguous string of non-whitespace characters ending at cursor.
+    // However, if the user typed "Hello ;mail", the word is ";mail".
+    // If the user typed ";date", the word is ";date".
+
+    // Find the last whitespace before cursor to delimit the word
+    const lastWhitespace = textBefore.search(/\s\S*$/);
+    const wordStartIndex = lastWhitespace === -1 ? 0 : lastWhitespace + 1;
+    const lastWord = textBefore.slice(wordStartIndex);
+
+    const snippet = snippets.find(s => s.keyword === lastWord);
+
+    if (snippet) {
+        // Perform expansion
+        e.preventDefault(); // Might be too late, but good practice if possible (it isn't for 'input')
+
+        // Replace keyword with content
+        const newTextBefore = textBefore.slice(0, wordStartIndex) + snippet.content;
+        const textAfter = text.slice(cursor);
+
+        memoTextarea.value = newTextBefore + textAfter;
+
+        // Move cursor to end of inserted content
+        const newCursorPos = newTextBefore.length;
+        memoTextarea.selectionStart = memoTextarea.selectionEnd = newCursorPos;
+
+        // Trigger visual feedback (optional)
+        showSaveStatus('Snippet Expanded!');
+    }
+}
+
+// 2. UI Logic
+if (openSnippetsBtn) {
+    openSnippetsBtn.onclick = () => {
+        renderSnippetsList();
+        clearSnippetForm();
+        snippetModal.classList.remove('hidden');
+    };
+}
+
+if (closeSnippetBtn) {
+    closeSnippetBtn.onclick = () => {
+        snippetModal.classList.add('hidden');
+    };
+}
+
+function renderSnippetsList() {
+    snippetList.innerHTML = snippets.map(s => `
+        <li class="snippet-item glass" onclick="editSnippet('${s.id}')" style="padding: 0.8rem; border-radius: 8px; cursor: pointer; border: 1px solid var(--glass-border); display: flex; flex-direction: column; gap: 0.3rem;">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+                <span style="font-family: monospace; background: rgba(255,255,255,0.1); padding: 2px 6px; border-radius: 4px; color: var(--primary-light); font-weight: bold;">${s.keyword}</span>
+                <i data-lucide="chevron-right" style="width: 14px; height: 14px; color: var(--text-dim);"></i>
+            </div>
+            <div style="font-size: 0.85rem; color: var(--text-dim); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+                ${s.content}
+            </div>
+        </li>
+    `).join('');
+    lucide.createIcons();
+}
+
+window.editSnippet = function (id) {
+    const s = snippets.find(item => item.id === id);
+    if (!s) return;
+
+    currentEditingSnippetId = id;
+    snippetKeywordInput.value = s.keyword;
+    snippetContentInput.value = s.content;
+    deleteSnippetBtn.classList.remove('hidden');
+    saveSnippetBtn.textContent = 'Update';
+}
+
+function clearSnippetForm() {
+    currentEditingSnippetId = null;
+    snippetKeywordInput.value = '';
+    snippetContentInput.value = '';
+    deleteSnippetBtn.classList.add('hidden');
+    saveSnippetBtn.textContent = 'Add';
+}
+
+clearSnippetBtn.onclick = clearSnippetForm;
+
+saveSnippetBtn.onclick = () => {
+    const keyword = snippetKeywordInput.value.trim();
+    const content = snippetContentInput.value;
+
+    if (!keyword || !content) {
+        alert('Please enter both keyword and content.');
+        return;
+    }
+
+    if (currentEditingSnippetId) {
+        // Update
+        const index = snippets.findIndex(s => s.id === currentEditingSnippetId);
+        if (index !== -1) {
+            snippets[index] = { ...snippets[index], keyword, content };
+        }
+    } else {
+        // Create
+        // Check for duplicate keyword
+        if (snippets.some(s => s.keyword === keyword)) {
+            alert('This keyword is already used.');
+            return;
+        }
+        snippets.push({
+            id: 'snip_' + Date.now(),
+            keyword,
+            content
+        });
+    }
+
+    saveSnippets();
+    renderSnippetsList();
+    clearSnippetForm();
+    showSaveStatus('Snippet Saved');
+};
+
+deleteSnippetBtn.onclick = () => {
+    if (!currentEditingSnippetId) return;
+    if (!confirm('Are you sure you want to delete this snippet?')) return;
+
+    snippets = snippets.filter(s => s.id !== currentEditingSnippetId);
+    saveSnippets();
+    renderSnippetsList();
+    clearSnippetForm();
+};
+
+function saveSnippets() {
+    localStorage.setItem(SNIPPETS_STORAGE_KEY, JSON.stringify(snippets));
 }
