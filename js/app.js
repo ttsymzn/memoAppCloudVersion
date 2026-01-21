@@ -343,7 +343,7 @@ function renderMemos() {
         const bodyContent = lines.slice(1).join('\n');
 
         const isPinned = memo.is_pinned || false;
-        const isExpanded = searchQuery.trim() !== '' || expandedMemoIds.has(memo.id);
+        // Always expanded
         const isSelected = index === selectedMemoIndex;
 
         // Highlighting and Markdown rendering
@@ -379,9 +379,9 @@ function renderMemos() {
         }).join('');
 
         return `
-            <div class="memo-card glass ${isPinned ? 'pinned' : ''} ${isExpanded ? 'expanded' : 'collapsed'} ${isSelected ? 'selected' : ''}" 
+            <div class="memo-card glass ${isPinned ? 'pinned' : ''} expanded ${isSelected ? 'selected' : ''}" 
                  id="memo-${memo.id}" 
-                 onclick="toggleMemoContent('${memo.id}')" 
+                 onclick="selectMemo('${memo.id}')" 
                  ondblclick="openEditor('${memo.id}')"
                  style="background: ${memo.color}">
                 
@@ -656,15 +656,13 @@ function linkifyMarkdown(text) {
 
 
 // Actions Logic
-window.toggleMemoContent = function (id) {
-    if (expandedMemoIds.has(id)) {
-        expandedMemoIds.delete(id);
-    } else {
-        expandedMemoIds.add(id);
+// Replaced toggleMemoContent with selectMemo
+window.selectMemo = function (id) {
+    const index = displayedMemoIds.indexOf(id);
+    if (index !== -1) {
+        selectedMemoIndex = index;
+        updateSelectionHighlight();
     }
-    saveUIState();
-    renderMemos();
-    lucide.createIcons();
 };
 
 window.togglePinMemo = async function (id) {
@@ -1852,22 +1850,22 @@ function initPullToRefresh() {
     let startY = 0;
     let isPulling = false;
     let isRefreshing = false;
-    
+
     // Only enable on touch devices/screens
     // But for testing we just attach events, they won't fire on mouse unless simulated
-    
+
     mainContent.addEventListener('touchstart', (e) => {
         if (mainContent.scrollTop <= 1 && !isRefreshing) {
             startY = e.touches[0].clientY;
             isPulling = true;
             // Reset transition for direct control
-            ptrElement.style.transition = 'none'; 
+            ptrElement.style.transition = 'none';
         }
     }, { passive: true });
 
     mainContent.addEventListener('touchmove', (e) => {
         if (!isPulling || isRefreshing) return;
-        
+
         const currentY = e.touches[0].clientY;
         const diff = currentY - startY;
 
@@ -1877,16 +1875,16 @@ function initPullToRefresh() {
             if (e.cancelable) {
                 e.preventDefault();
             }
-            
+
             // Add resistance (logarithmic or square root)
             // diff * 0.4 makes it feel heavier
-            const pullDistance = Math.min(diff * 0.4, 150); 
-            
+            const pullDistance = Math.min(diff * 0.4, 150);
+
             ptrElement.style.height = `${pullDistance}px`;
-            
+
             // Rotate the icon
             ptrIcon.style.transform = `rotate(${pullDistance * 2}deg)`;
-            
+
             // Color change threshold
             if (pullDistance > 60) {
                 ptrIcon.style.color = 'var(--primary-light)';
@@ -1905,12 +1903,12 @@ function initPullToRefresh() {
     mainContent.addEventListener('touchend', async () => {
         if (!isPulling || isRefreshing) return;
         isPulling = false;
-        
+
         // Restore transition for smooth snap back
         ptrElement.style.transition = 'height 0.3s cubic-bezier(0.4, 0, 0.2, 1)';
-        
+
         const currentHeight = parseInt(ptrElement.style.height || '0');
-        
+
         if (currentHeight > 60) {
             // Trigger refresh
             isRefreshing = true;
@@ -1922,10 +1920,10 @@ function initPullToRefresh() {
                 // Minimum delay to show animation
                 const fetchPromise = fetchData();
                 const timeoutPromise = new Promise(resolve => setTimeout(resolve, 800));
-                
+
                 await Promise.all([fetchPromise, timeoutPromise]);
                 render();
-            } catch(e) {
+            } catch (e) {
                 console.error("Refresh failed", e);
             } finally {
                 // Reset
@@ -1933,7 +1931,7 @@ function initPullToRefresh() {
                 ptrIcon.classList.remove('rotate');
                 ptrElement.style.height = '0px';
                 isRefreshing = false;
-                
+
                 // Reset icon rotation after transition
                 setTimeout(() => {
                     ptrIcon.style.transform = 'rotate(0deg)';
