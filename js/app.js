@@ -8,6 +8,7 @@ let expandedMemoIds = new Set();
 let currentView = 'all'; // 'all' or 'archived'
 let selectedMemoIndex = -1;
 let displayedMemoIds = [];
+let archivedLimit = 10;
 
 // DOM Elements
 const memoGrid = document.getElementById('memo-grid');
@@ -361,6 +362,14 @@ function renderMemos() {
         return new Date(b.updated_at) - new Date(a.updated_at);
     });
 
+    let hasMoreArchived = false;
+    if (currentView === 'archived') {
+        if (filtered.length > archivedLimit) {
+            hasMoreArchived = true;
+            filtered = filtered.slice(0, archivedLimit);
+        }
+    }
+
     displayedMemoIds = filtered.map(m => m.id);
 
     if (filtered.length === 0) {
@@ -368,7 +377,7 @@ function renderMemos() {
         return;
     }
 
-    memoGrid.innerHTML = filtered.map((memo, index) => {
+    const memoListHTML = filtered.map((memo, index) => {
         const lines = memo.content.split('\n');
         const title = lines[0] || 'Untitled';
         const bodyContent = lines.slice(1).join('\n');
@@ -470,7 +479,24 @@ function renderMemos() {
             </div>
         `;
     }).join('');
+
+    if (hasMoreArchived) {
+        memoGrid.innerHTML = memoListHTML + `
+            <div class="load-more-container" style="padding: 20px; text-align: center;">
+                <button onclick="loadMoreArchived()" class="btn-primary glass" style="width: 100%; max-width: 300px; margin: 0 auto; display: block;">
+                    更に10件表示.....
+                </button>
+            </div>
+        `;
+    } else {
+        memoGrid.innerHTML = memoListHTML;
+    }
 }
+
+window.loadMoreArchived = function () {
+    archivedLimit += 10;
+    renderMemos();
+};
 
 function highlightMatch(text, query) {
     if (!query) return text;
@@ -854,6 +880,7 @@ window.setTagFilter = function (tagId) {
 
 globalSearch.addEventListener('input', (e) => {
     searchQuery = e.target.value;
+    archivedLimit = 10; // Reset pagination on search
     render();
 
     // Auto-expand sidebar if it's closed but searching? 
@@ -1752,6 +1779,7 @@ viewAllBtn.onclick = () => {
 
 viewArchivedBtn.onclick = () => {
     currentView = 'archived';
+    archivedLimit = 10; // Reset pagination
     updateSidebarActiveState();
     saveUIState();
     render();
