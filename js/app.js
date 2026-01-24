@@ -2005,6 +2005,61 @@ function initPullToRefresh() {
 }
 // Text Expander Logic
 
+function processSnippetExpansion(content) {
+    const now = new Date();
+    let text = content;
+
+    // 1. Handle Date Calculations (e.g., %@+1d, %@-1w)
+    // Matches %@ followed by signed number and unit (d, w, m, y)
+    text = text.replace(/%@([+-]?\d+)([dwmy])/g, (match, val, unit) => {
+        const targetDate = new Date();
+        const num = parseInt(val, 10);
+
+        if (unit === 'd') targetDate.setDate(targetDate.getDate() + num);
+        else if (unit === 'w') targetDate.setDate(targetDate.getDate() + (num * 7));
+        else if (unit === 'm') targetDate.setMonth(targetDate.getMonth() + num);
+        else if (unit === 'y') targetDate.setFullYear(targetDate.getFullYear() + num);
+
+        // Default format: YYYY-MM-DD
+        const y = targetDate.getFullYear();
+        const m = String(targetDate.getMonth() + 1).padStart(2, '0');
+        const d = String(targetDate.getDate()).padStart(2, '0');
+        return `${y}-${m}-${d}`;
+    });
+
+    // 2. Handle Standard Date/Time Macros
+    // %Y: 4-digit year, %y: 2-digit year, %m: Month, %d: Day
+    // %H: Hour, %M: Minute, %S: Second
+    // %A: Day of week (Full), %a: Day of week (Short)
+    const daysJP = ['日曜日', '月曜日', '火曜日', '水曜日', '木曜日', '金曜日', '土曜日'];
+    const daysShortJP = ['日', '月', '火', '水', '木', '金', '土'];
+
+    text = text.replace(/%[YymdHMSAa]/g, (match) => {
+        switch (match) {
+            case '%Y': return now.getFullYear();
+            case '%y': return String(now.getFullYear()).slice(-2);
+            case '%m': return String(now.getMonth() + 1).padStart(2, '0');
+            case '%d': return String(now.getDate()).padStart(2, '0');
+            case '%H': return String(now.getHours()).padStart(2, '0');
+            case '%M': return String(now.getMinutes()).padStart(2, '0');
+            case '%S': return String(now.getSeconds()).padStart(2, '0');
+            case '%A': return daysJP[now.getDay()];
+            case '%a': return daysShortJP[now.getDay()];
+            default: return match;
+        }
+    });
+
+    // 3. Handle Cursor Position Marker (%|)
+    let cursorOffset = null;
+    const cursorIdx = text.indexOf('%|');
+    if (cursorIdx !== -1) {
+        cursorOffset = cursorIdx;
+        text = text.replace('%|', '');
+    }
+
+    return { text, cursorOffset };
+}
+
 // 1. Text Expansion Listeners
 memoTextarea.addEventListener('input', checkTextExpansion);
 
@@ -2015,11 +2070,6 @@ function checkTextExpansion(e) {
     const text = memoTextarea.value;
     const textBefore = text.slice(0, cursor);
 
-    // We check the "word" immediately before the cursor.
-    // For simplicity, we treat the keyword as the contiguous string of non-whitespace characters ending at cursor.
-    // However, if the user typed "Hello ;mail", the word is ";mail".
-    // If the user typed ";date", the word is ";date".
-
     // Find the last whitespace before cursor to delimit the word
     const lastWhitespace = textBefore.search(/\s\S*$/);
     const wordStartIndex = lastWhitespace === -1 ? 0 : lastWhitespace + 1;
@@ -2028,20 +2078,27 @@ function checkTextExpansion(e) {
     const snippet = snippets.find(s => s.keyword === lastWord);
 
     if (snippet) {
-        // Perform expansion
-        e.preventDefault(); // Might be too late, but good practice if possible (it isn't for 'input')
+        // e.preventDefault(); // Input already happened, so we just modify the value
+
+        const { text: expandedContent, cursorOffset } = processSnippetExpansion(snippet.content);
 
         // Replace keyword with content
-        const newTextBefore = textBefore.slice(0, wordStartIndex) + snippet.content;
+        const newTextBefore = textBefore.slice(0, wordStartIndex) + expandedContent;
         const textAfter = text.slice(cursor);
 
         memoTextarea.value = newTextBefore + textAfter;
 
-        // Move cursor to end of inserted content
-        const newCursorPos = newTextBefore.length;
+        // Move cursor
+        let newCursorPos;
+        if (cursorOffset !== null) {
+            newCursorPos = wordStartIndex + cursorOffset;
+        } else {
+            newCursorPos = wordStartIndex + expandedContent.length;
+        }
+
         memoTextarea.selectionStart = memoTextarea.selectionEnd = newCursorPos;
 
-        // Trigger visual feedback (optional)
+        // Trigger visual feedback
         showSaveStatus('Snippet Expanded!');
     }
 }
