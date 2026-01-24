@@ -496,6 +496,7 @@ function renderMemos() {
 window.loadMoreArchived = function () {
     archivedLimit += 10;
     renderMemos();
+    lucide.createIcons();
 };
 
 function highlightMatch(text, query) {
