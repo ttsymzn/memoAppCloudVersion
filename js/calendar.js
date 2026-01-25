@@ -94,16 +94,18 @@ async function initializeGapiClient() {
 }
 
 function checkAuthStatus() {
+    if (!gapi.client) return; // まだ初期化されていない場合は何もしない
+
     const token = localStorage.getItem(STORAGE_KEYS.ACCESS_TOKEN);
     if (token) {
         gapi.client.setToken({ access_token: token });
-        statusText.textContent = '連携済み';
-        connectBtn.classList.add('hidden');
-        disconnectBtn.classList.remove('hidden');
+        if (statusText) statusText.textContent = '連携済み';
+        if (connectBtn) connectBtn.classList.add('hidden');
+        if (disconnectBtn) disconnectBtn.classList.remove('hidden');
     } else {
-        statusText.textContent = '未連携';
-        connectBtn.classList.remove('hidden');
-        disconnectBtn.classList.add('hidden');
+        if (statusText) statusText.textContent = '未連携';
+        if (connectBtn) connectBtn.classList.remove('hidden');
+        if (disconnectBtn) disconnectBtn.classList.add('hidden');
     }
 }
 
