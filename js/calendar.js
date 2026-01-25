@@ -150,15 +150,18 @@ async function checkAndCreateDailyMemo() {
     // 6:00 AM check
     if (now.getHours() < 6) return;
 
-    const dateStr = now.toISOString().split('T')[0]; // YYYY-MM-DD
-    const lastCreated = localStorage.getItem(STORAGE_KEYS.LAST_CREATED_DATE);
+    // 作成される予定のタイトルを生成
+    const dateTitle = `今日 ${now.getMonth() + 1}月${now.getDate()}日 (${getWeekday(now)}) の予定`;
 
-    if (lastCreated === dateStr) {
-        console.log('Daily calendar memo already created for today.');
+    // グローバルの memos 配列（app.jsで管理）の中に、このタイトルで始まるメモがあるか確認
+    const exists = window.memos && window.memos.some(m => m.content.startsWith(dateTitle));
+
+    if (exists) {
+        console.log('今日のカレンダーメモは既に存在します。');
         return;
     }
 
-    // Attempt to create
+    // 作成されていない、または削除された場合は作成を実行
     await createDailyMemoFromCalendar(now);
 }
 
