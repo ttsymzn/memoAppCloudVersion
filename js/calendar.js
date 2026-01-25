@@ -254,7 +254,7 @@ async function createDailyMemoFromCalendar(date) {
 
                 // カレンダー名を表示に含める（必要に応じて）
                 const calLabel = uniqueEvents.length > 1 ? ` [${event.calendarSummary}]` : '';
-                content += `- [ ] ${startTime} ${event.summary}${calLabel}\n`;
+                content += `[] ${startTime} ${event.summary}${calLabel}\n`;
             });
         }
 
