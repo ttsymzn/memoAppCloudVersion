@@ -139,39 +139,41 @@ function handleSignoutClick() {
 /**
  * Main Logic: Check if it's time to create the memo
  */
+let isCreatingMemo = false;
+
+/**
+ * Main Logic: Check if it's time to create the memo
+ */
 async function checkAndCreateDailyMemo() {
     if (localStorage.getItem(STORAGE_KEYS.AUTO_CREATE) !== 'true') return;
+    if (isCreatingMemo) return; // すでに作成処理中なら抜ける
 
     const token = localStorage.getItem(STORAGE_KEYS.ACCESS_TOKEN);
-    if (!token) {
-        console.log('Calendar Access Token not found.');
-        return;
-    }
+    if (!token) return;
 
     // Google API (calendar) が読み込まれるまで待つ
     if (!gapi.client || !gapi.client.calendar) {
-        console.log('Waiting for Google Calendar API to initialize...');
         setTimeout(checkAndCreateDailyMemo, 1000);
         return;
     }
 
     const now = new Date();
-    // 6:00 AM check
     if (now.getHours() < 6) return;
 
-    // 作成される予定のタイトルを生成
     const dateTitle = `今日 ${now.getMonth() + 1}月${now.getDate()}日 (${getWeekday(now)}) の予定`;
-
-    // グローバルの memos 配列（app.jsで管理）の中に、このタイトルで始まるメモがあるか確認
     const exists = window.memos && window.memos.some(m => m.content.startsWith(dateTitle));
 
     if (exists) {
-        console.log('今日のカレンダーメモは既に存在します。');
         return;
     }
 
-    // 作成されていない、または削除された場合は作成を実行
-    await createDailyMemoFromCalendar(now);
+    // 作成開始
+    isCreatingMemo = true;
+    try {
+        await createDailyMemoFromCalendar(now);
+    } finally {
+        isCreatingMemo = false; // 成功・失敗に関わらずフラグを戻す
+    }
 }
 
 // Windowに公開
