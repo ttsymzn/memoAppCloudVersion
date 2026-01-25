@@ -1,5 +1,6 @@
 // App State
 let memos = [];
+window.memos = memos; // Calendar機能から見えるようにする
 let tags = [];
 let activeTagFilter = null;
 let searchQuery = '';
@@ -177,6 +178,11 @@ async function onUserLoggedIn() {
 
     await fetchData();
     render();
+
+    // メモの読み込みが終わったので、カレンダーのチェックを行う
+    if (window.checkAndCreateDailyMemo) {
+        window.checkAndCreateDailyMemo();
+    }
 }
 
 function onUserLoggedOut() {
@@ -209,6 +215,7 @@ async function fetchData() {
         console.error("Memos fetch error:", memosError.message);
     } else {
         memos = memosData;
+        window.memos = memos; // 常に最新を同期
     }
 }
 

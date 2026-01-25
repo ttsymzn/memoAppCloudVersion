@@ -57,10 +57,7 @@ async function initCalendar() {
 
     checkAuthStatus();
 
-    // After auth check, check if we need to auto-create memo
-    setTimeout(() => {
-        checkAndCreateDailyMemo();
-    }, 2000);
+    checkAuthStatus();
 }
 
 function setupEventListeners() {
@@ -144,7 +141,17 @@ async function checkAndCreateDailyMemo() {
     if (localStorage.getItem(STORAGE_KEYS.AUTO_CREATE) !== 'true') return;
 
     const token = localStorage.getItem(STORAGE_KEYS.ACCESS_TOKEN);
-    if (!token) return;
+    if (!token) {
+        console.log('Calendar Access Token not found.');
+        return;
+    }
+
+    // Google API (calendar) が読み込まれるまで待つ
+    if (!gapi.client || !gapi.client.calendar) {
+        console.log('Waiting for Google Calendar API to initialize...');
+        setTimeout(checkAndCreateDailyMemo, 1000);
+        return;
+    }
 
     const now = new Date();
     // 6:00 AM check
@@ -165,48 +172,97 @@ async function checkAndCreateDailyMemo() {
     await createDailyMemoFromCalendar(now);
 }
 
+// Windowに公開
+window.checkAndCreateDailyMemo = checkAndCreateDailyMemo;
+
 async function createDailyMemoFromCalendar(date) {
     try {
-        console.log('Fetching calendar events...');
+        console.log('Fetching all calendars...');
+
+        // 1. カレンダー一覧を取得
+        const calendarListResponse = await gapi.client.calendar.calendarList.list();
+        const calendars = calendarListResponse.result.items;
+
+        if (!calendars || calendars.length === 0) {
+            console.warn('No calendars found.');
+            return;
+        }
+
         const startOfDay = new Date(date);
         startOfDay.setHours(0, 0, 0, 0);
 
         const endOfDay = new Date(date);
         endOfDay.setHours(23, 59, 59, 999);
 
-        const response = await gapi.client.calendar.events.list({
-            'calendarId': 'primary',
-            'timeMin': startOfDay.toISOString(),
-            'timeMax': endOfDay.toISOString(),
-            'showDeleted': false,
-            'singleEvents': true,
-            'orderBy': 'startTime',
+        let allEvents = [];
+
+        // 2. 各カレンダーから予定を取得
+        console.log(`Fetching events from ${calendars.length} calendars...`);
+        const eventPromises = calendars.map(async (cal) => {
+            try {
+                const response = await gapi.client.calendar.events.list({
+                    'calendarId': cal.id,
+                    'timeMin': startOfDay.toISOString(),
+                    'timeMax': endOfDay.toISOString(),
+                    'showDeleted': false,
+                    'singleEvents': true,
+                    'orderBy': 'startTime',
+                });
+                return response.result.items.map(event => ({
+                    ...event,
+                    calendarSummary: cal.summary // どのカレンダーの予定か判別用
+                }));
+            } catch (err) {
+                console.warn(`Could not fetch events for calendar: ${cal.summary}`, err);
+                return [];
+            }
         });
 
-        const events = response.result.items;
+        const results = await Promise.all(eventPromises);
+        results.forEach(events => {
+            allEvents = allEvents.concat(events);
+        });
+
+        // 3. 予定を時間順にソート
+        allEvents.sort((a, b) => {
+            const startA = a.start.dateTime || a.start.date;
+            const startB = b.start.dateTime || b.start.date;
+            return new Date(startA) - new Date(startB);
+        });
+
+        // 4. 重複の排除 (同じIDの予定が複数のカレンダーにある場合)
+        const seenIds = new Set();
+        const uniqueEvents = allEvents.filter(event => {
+            if (seenIds.has(event.id)) return false;
+            seenIds.add(event.id);
+            return true;
+        });
+
+        // 5. メモの内容を作成
         let content = `今日 ${date.getMonth() + 1}月${date.getDate()}日 (${getWeekday(date)}) の予定\n\n`;
 
-        if (!events || events.length === 0) {
+        if (uniqueEvents.length === 0) {
             content += '予定はありません。';
         } else {
-            events.forEach(event => {
+            uniqueEvents.forEach(event => {
                 const start = event.start.dateTime || event.start.date;
                 const startTime = event.start.dateTime ? new Date(start).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '終日';
-                content += `- [ ] ${startTime} ${event.summary}\n`;
+
+                // カレンダー名を表示に含める（必要に応じて）
+                const calLabel = uniqueEvents.length > 1 ? ` [${event.calendarSummary}]` : '';
+                content += `- [ ] ${startTime} ${event.summary}${calLabel}\n`;
             });
         }
 
-        // Use the global memo app function to save
+        // 6. メモを保存
         if (window.createNewMemo) {
             await window.createNewMemo(content);
             localStorage.setItem(STORAGE_KEYS.LAST_CREATED_DATE, date.toISOString().split('T')[0]);
-            console.log('Daily calendar memo created!');
-        } else {
-            console.error('createNewMemo function not found');
+            console.log('Daily combined calendar memo created!');
         }
 
     } catch (err) {
-        console.error('Error fetching calendar events:', err);
+        console.error('Error fetching combined calendar events:', err);
     }
 }
 
