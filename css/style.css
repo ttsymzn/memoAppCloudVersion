@@ -1489,3 +1489,21 @@ kbd {
         background: rgba(255, 255, 255, 0.1);
     }
 }
+
+/* Auth Status Box (Calendar Integration) */
+.auth-status-box {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    transition: all 0.3s ease;
+}
+
+#calendar-status-text {
+    font-weight: 500;
+    font-size: 0.9rem;
+}
+
+.modal-body p {
+    line-height: 1.5;
+    font-size: 0.9rem;
+}

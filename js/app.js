@@ -148,6 +148,11 @@ async function init() {
     initResizer();
     initPullToRefresh();
     loadSnippets(); // Load snippets on init
+
+    // Initialize Calendar integration
+    if (window.initCalendar) {
+        window.initCalendar();
+    }
 }
 
 function loadSnippets() {
@@ -1230,6 +1235,35 @@ async function moveTaskToDone() {
         alert('タスクの移動に失敗しました。');
     }
 }
+
+// Function to create a new memo programmatically
+window.createNewMemo = async function (content) {
+    const client = window.getSupabase();
+    const userId = window.authManager.getUserId();
+
+    if (!userId) {
+        console.warn('Cannot create memo: User not logged in');
+        return;
+    }
+
+    const payload = {
+        content,
+        tags: [],
+        is_public: false,
+        user_id: userId,
+        updated_at: new Date().toISOString()
+    };
+
+    try {
+        const { error } = await client.from('memos').insert([payload]);
+        if (error) throw error;
+
+        await fetchData();
+        render();
+    } catch (err) {
+        console.error("Programmatic save error:", err);
+    }
+};
 
 // Add keyboard shortcut handler for Ctrl+E
 memoTextarea.addEventListener('keydown', (e) => {

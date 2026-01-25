@@ -26,6 +26,10 @@
     <link rel="stylesheet" href="css/style.css">
     <link rel="stylesheet" href="css/auth.css">
     <link rel="stylesheet" href="css/ptr.css">
+
+    <!-- Google API Client Libraries -->
+    <script src="https://accounts.google.com/gsi/client" async defer></script>
+    <script src="https://apis.google.com/js/api.js" async defer></script>
 </head>
 
 <body class="dark-mode">
@@ -88,6 +92,10 @@
                     <button id="open-snippets-btn" class="sidebar-btn">
                         <i data-lucide="zap"></i>
                         <span>Text Expander</span>
+                    </button>
+                    <button id="open-calendar-settings-btn" class="sidebar-btn">
+                        <i data-lucide="calendar"></i>
+                        <span>Calendar Settings</span>
                     </button>
                 </div>
                 <button id="help-btn" class="help-trigger">
@@ -293,7 +301,46 @@
             </div>
         </div>
 
-        <!-- Authentication Screen -->
+        <!-- Google Calendar Settings Modal -->
+        <div id="calendar-settings-modal" class="modal-overlay hidden">
+            <div class="modal-content glass-premium" style="max-width: 500px; width: 90%;">
+                <header class="modal-header">
+                    <h2>Google Calendar Settings</h2>
+                    <button id="close-calendar-settings-btn" class="icon-btn"><i data-lucide="x"></i></button>
+                </header>
+                <div class="modal-body" style="padding: 1rem 0;">
+                    <p style="margin-bottom: 1rem; color: var(--text-dim);">
+                        毎朝6:00にその日の予定をまとめてメモを作成します。
+                        初回はGoogleアカウントとの連携が必要です。
+                    </p>
+
+                    <div id="calendar-auth-status" class="auth-status-box"
+                        style="margin-bottom: 1.5rem; padding: 1rem; border-radius: 8px; background: rgba(255,255,255,0.05); border: 1px solid var(--glass-border);">
+                        <div style="display: flex; align-items: center; gap: 0.5rem;">
+                            <i data-lucide="info" style="width: 16px; height: 16px;"></i>
+                            <span id="calendar-status-text">未連携</span>
+                        </div>
+                    </div>
+
+                    <div class="input-group-vertical" style="margin-bottom: 1rem;">
+                        <label>自動作成機能</label>
+                        <div style="display: flex; align-items: center; gap: 0.5rem; margin-top: 0.5rem;">
+                            <input type="checkbox" id="calendar-auto-create-toggle" style="width: 20px; height: 20px;">
+                            <span>有効にする</span>
+                        </div>
+                    </div>
+
+                    <div class="modal-actions" style="margin-top: 2rem;">
+                        <button class="btn-secondary" id="calendar-disconnect-btn" class="hidden">連携解除</button>
+                        <div style="flex: 1;"></div>
+                        <button class="btn-primary" id="calendar-connect-btn">
+                            <i data-lucide="log-in" style="width: 16px; height: 16px; margin-right: 0.5rem;"></i>
+                            Googleと連携する
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
         <div id="auth-screen" class="auth-container">
             <div class="auth-card">
                 <div class="auth-header">
@@ -324,11 +371,14 @@
             url: 'https://vxymhwkkkstwhpjhiawy.supabase.co',
             key: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZ4eW1od2tra3N0d2hwamhpYXd5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njc5OTg3ODYsImV4cCI6MjA4MzU3NDc4Nn0.T29kLI9sdgcOMNft-QkFDRXaEqXr4Bw0xKs3kg73GH8',
             // Specify the redirect URL if window.location.origin is not correct (e.g. localhost:3000)
-            redirectUrl: 'https://ttsymzn.github.io/memoAppCloudVersion/'
+            redirectUrl: 'https://ttsymzn.github.io/memoAppCloudVersion/',
+            // Google Calendar settings
+            googleClientId: '697621119828-98c9mm0bmbtv2s41bjti128bglp1hsvf.apps.googleusercontent.com'
         };
     </script>
     <script src="js/supabase.js"></script>
     <script src="js/auth.js"></script>
+    <script src="js/calendar.js"></script>
     <script src="js/app.js"></script>
     <script>
         // Initialize Lucide icons
