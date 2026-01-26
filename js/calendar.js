@@ -57,7 +57,15 @@ async function initCalendar() {
 
     checkAuthStatus();
 
-    checkAuthStatus();
+    // 定期的にチェックする（30分おき）
+    setInterval(checkAndCreateDailyMemo, 30 * 60 * 1000);
+
+    // タブがアクティブになった時もチェックする
+    document.addEventListener('visibilitychange', () => {
+        if (document.visibilityState === 'visible') {
+            checkAndCreateDailyMemo();
+        }
+    });
 }
 
 function setupEventListeners() {
@@ -94,7 +102,7 @@ async function initializeGapiClient() {
 }
 
 function checkAuthStatus() {
-    if (!gapi.client) return; // まだ初期化されていない場合は何もしない
+    if (!gapi.client) return;
 
     const token = localStorage.getItem(STORAGE_KEYS.ACCESS_TOKEN);
     if (token) {
@@ -109,20 +117,32 @@ function checkAuthStatus() {
     }
 }
 
-function handleAuthClick() {
-    tokenClient.callback = async (resp) => {
-        if (resp.error !== undefined) {
-            throw (resp);
+async function requestNewToken(prompt = '') {
+    return new Promise((resolve, reject) => {
+        try {
+            tokenClient.callback = async (resp) => {
+                if (resp.error !== undefined) {
+                    reject(resp);
+                    return;
+                }
+                localStorage.setItem(STORAGE_KEYS.ACCESS_TOKEN, resp.access_token);
+                gapi.client.setToken({ access_token: resp.access_token });
+                checkAuthStatus();
+                resolve(resp.access_token);
+            };
+            tokenClient.requestAccessToken({ prompt: prompt });
+        } catch (err) {
+            reject(err);
         }
-        localStorage.setItem(STORAGE_KEYS.ACCESS_TOKEN, resp.access_token);
-        checkAuthStatus();
-        checkAndCreateDailyMemo();
-    };
+    });
+}
 
-    if (gapi.client.getToken() === null) {
-        tokenClient.requestAccessToken({ prompt: 'consent' });
-    } else {
-        tokenClient.requestAccessToken({ prompt: '' });
+async function handleAuthClick() {
+    try {
+        await requestNewToken('consent');
+        checkAndCreateDailyMemo();
+    } catch (err) {
+        console.error('Auth error:', err);
     }
 }
 
@@ -141,38 +161,58 @@ function handleSignoutClick() {
  */
 let isCreatingMemo = false;
 
-/**
- * Main Logic: Check if it's time to create the memo
- */
 async function checkAndCreateDailyMemo() {
+    // 1. 基本チェック
     if (localStorage.getItem(STORAGE_KEYS.AUTO_CREATE) !== 'true') return;
-    if (isCreatingMemo) return; // すでに作成処理中なら抜ける
+    if (isCreatingMemo) return;
 
     const token = localStorage.getItem(STORAGE_KEYS.ACCESS_TOKEN);
     if (!token) return;
 
-    // Google API (calendar) が読み込まれるまで待つ
-    if (!gapi.client || !gapi.client.calendar) {
-        setTimeout(checkAndCreateDailyMemo, 1000);
+    // 2. 時間チェック（朝6時以降）
+    const now = new Date();
+    if (now.getHours() < 6) return;
+
+    // 3. 重複作成防止（localStorage + タイトルチェック）
+    const todayStr = now.getFullYear() + '-' + (now.getMonth() + 1) + '-' + now.getDate();
+    if (localStorage.getItem(STORAGE_KEYS.LAST_CREATED_DATE) === todayStr) {
         return;
     }
 
-    const now = new Date();
-    if (now.getHours() < 6) return;
+    // Google API の準備待ち
+    if (!gapi.client || !gapi.client.calendar) {
+        console.log('GAPI client not ready, skipping check...');
+        return;
+    }
 
     const dateTitle = `今日 ${now.getMonth() + 1}月${now.getDate()}日 (${getWeekday(now)}) の予定`;
     const exists = window.memos && window.memos.some(m => m.content.startsWith(dateTitle));
 
     if (exists) {
+        // すでに存在する場合はlocalStorageを更新して終了
+        localStorage.setItem(STORAGE_KEYS.LAST_CREATED_DATE, todayStr);
         return;
     }
 
-    // 作成開始
+    // 4. 作成開始
     isCreatingMemo = true;
     try {
         await createDailyMemoFromCalendar(now);
+    } catch (err) {
+        console.error('Failed to create daily memo:', err);
+        // 401 (Unauthorized) の場合はトークンの更新を試みる
+        if (err.status === 401 || (err.result && err.result.error && err.result.error.code === 401)) {
+            console.log('Token might be expired, attempting silent refresh...');
+            try {
+                await requestNewToken(''); // プロンプトなしで再取得を試みる
+                // リトライ
+                await createDailyMemoFromCalendar(now);
+            } catch (retryErr) {
+                console.error('Retry failed:', retryErr);
+            }
+        }
     } finally {
-        isCreatingMemo = false; // 成功・失敗に関わらずフラグを戻す
+        isCreatingMemo = false;
     }
 }
 
@@ -180,93 +220,87 @@ async function checkAndCreateDailyMemo() {
 window.checkAndCreateDailyMemo = checkAndCreateDailyMemo;
 
 async function createDailyMemoFromCalendar(date) {
-    try {
-        console.log('Fetching all calendars...');
+    console.log('Fetching calendar events...');
 
-        // 1. カレンダー一覧を取得
-        const calendarListResponse = await gapi.client.calendar.calendarList.list();
-        const calendars = calendarListResponse.result.items;
+    // 1. カレンダー一覧を取得
+    const calendarListResponse = await gapi.client.calendar.calendarList.list();
+    const calendars = calendarListResponse.result.items;
 
-        if (!calendars || calendars.length === 0) {
-            console.warn('No calendars found.');
-            return;
-        }
+    if (!calendars || calendars.length === 0) {
+        console.warn('No calendars found.');
+        return;
+    }
 
-        const startOfDay = new Date(date);
-        startOfDay.setHours(0, 0, 0, 0);
+    const startOfDay = new Date(date);
+    startOfDay.setHours(0, 0, 0, 0);
 
-        const endOfDay = new Date(date);
-        endOfDay.setHours(23, 59, 59, 999);
+    const endOfDay = new Date(date);
+    endOfDay.setHours(23, 59, 59, 999);
 
-        let allEvents = [];
+    let allEvents = [];
 
-        // 2. 各カレンダーから予定を取得
-        console.log(`Fetching events from ${calendars.length} calendars...`);
-        const eventPromises = calendars.map(async (cal) => {
-            try {
-                const response = await gapi.client.calendar.events.list({
-                    'calendarId': cal.id,
-                    'timeMin': startOfDay.toISOString(),
-                    'timeMax': endOfDay.toISOString(),
-                    'showDeleted': false,
-                    'singleEvents': true,
-                    'orderBy': 'startTime',
-                });
-                return response.result.items.map(event => ({
-                    ...event,
-                    calendarSummary: cal.summary // どのカレンダーの予定か判別用
-                }));
-            } catch (err) {
-                console.warn(`Could not fetch events for calendar: ${cal.summary}`, err);
-                return [];
-            }
-        });
-
-        const results = await Promise.all(eventPromises);
-        results.forEach(events => {
-            allEvents = allEvents.concat(events);
-        });
-
-        // 3. 予定を時間順にソート
-        allEvents.sort((a, b) => {
-            const startA = a.start.dateTime || a.start.date;
-            const startB = b.start.dateTime || b.start.date;
-            return new Date(startA) - new Date(startB);
-        });
-
-        // 4. 重複の排除 (同じIDの予定が複数のカレンダーにある場合)
-        const seenIds = new Set();
-        const uniqueEvents = allEvents.filter(event => {
-            if (seenIds.has(event.id)) return false;
-            seenIds.add(event.id);
-            return true;
-        });
-
-        // 5. メモの内容を作成
-        let content = `今日 ${date.getMonth() + 1}月${date.getDate()}日 (${getWeekday(date)}) の予定\n\n`;
-
-        if (uniqueEvents.length === 0) {
-            content += '予定はありません。';
-        } else {
-            uniqueEvents.forEach(event => {
-                const start = event.start.dateTime || event.start.date;
-                const startTime = event.start.dateTime ? new Date(start).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '終日';
-
-                // カレンダー名を表示に含める（必要に応じて）
-                const calLabel = uniqueEvents.length > 1 ? ` [${event.calendarSummary}]` : '';
-                content += `[] ${startTime} ${event.summary}${calLabel}\n`;
+    // 2. 各カレンダーから予定を取得
+    const eventPromises = calendars.map(async (cal) => {
+        try {
+            const response = await gapi.client.calendar.events.list({
+                'calendarId': cal.id,
+                'timeMin': startOfDay.toISOString(),
+                'timeMax': endOfDay.toISOString(),
+                'showDeleted': false,
+                'singleEvents': true,
+                'orderBy': 'startTime',
             });
+            return response.result.items.map(event => ({
+                ...event,
+                calendarSummary: cal.summary
+            }));
+        } catch (err) {
+            console.warn(`Could not fetch events for calendar: ${cal.summary}`, err);
+            return [];
         }
+    });
 
-        // 6. メモを保存
-        if (window.createNewMemo) {
-            await window.createNewMemo(content);
-            localStorage.setItem(STORAGE_KEYS.LAST_CREATED_DATE, date.toISOString().split('T')[0]);
-            console.log('Daily combined calendar memo created!');
-        }
+    const results = await Promise.all(eventPromises);
+    results.forEach(events => {
+        allEvents = allEvents.concat(events);
+    });
 
-    } catch (err) {
-        console.error('Error fetching combined calendar events:', err);
+    // 3. 予定を整理（ソート・重複排除）
+    allEvents.sort((a, b) => {
+        const startA = a.start.dateTime || a.start.date;
+        const startB = b.start.dateTime || b.start.date;
+        return new Date(startA) - new Date(startB);
+    });
+
+    const seenIds = new Set();
+    const uniqueEvents = allEvents.filter(event => {
+        if (seenIds.has(event.id)) return false;
+        seenIds.add(event.id);
+        return true;
+    });
+
+    // 4. 内容を作成
+    let content = `今日 ${date.getMonth() + 1}月${date.getDate()}日 (${getWeekday(date)}) の予定\n\n`;
+
+    if (uniqueEvents.length === 0) {
+        content += '予定はありません。';
+    } else {
+        uniqueEvents.forEach(event => {
+            const start = event.start.dateTime || event.start.date;
+            const startTime = event.start.dateTime ? new Date(start).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '終日';
+            const calLabel = calendars.length > 1 ? ` [${event.calendarSummary}]` : '';
+            content += `[] ${startTime} ${event.summary}${calLabel}\n`;
+        });
+    }
+
+    // 5. メモを保存
+    if (window.createNewMemo) {
+        await window.createNewMemo(content);
+        const todayStr = date.getFullYear() + '-' + (date.getMonth() + 1) + '-' + date.getDate();
+        localStorage.setItem(STORAGE_KEYS.LAST_CREATED_DATE, todayStr);
+        console.log('Daily combined calendar memo created successfully!');
+    } else {
+        throw new Error('window.createNewMemo is not available');
     }
 }
 
@@ -277,3 +311,4 @@ function getWeekday(date) {
 
 // Export initialization
 window.initCalendar = initCalendar;
+
