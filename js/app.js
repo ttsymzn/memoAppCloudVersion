@@ -494,9 +494,9 @@ function renderMemos() {
 
     if (hasMoreArchived) {
         memoGrid.innerHTML = memoListHTML + `
-            <div class="load-more-container" style="padding: 20px; text-align: center;">
-                <button onclick="loadMoreArchived()" class="btn-primary glass" style="width: 100%; max-width: 300px; margin: 0 auto; display: block;">
-                    更に10件表示.....
+            <div class="load-more-container">
+                <button onclick="loadMoreArchived()" class="btn-primary glass load-more-btn">
+                    さらに10件表示
                 </button>
             </div>
         `;

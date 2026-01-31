@@ -19,6 +19,7 @@
     margin: 0;
     padding: 0;
     box-sizing: border-box;
+    touch-action: manipulation;
 }
 
 body {
@@ -26,6 +27,7 @@ body {
     color: var(--text-main);
     font-family: var(--font-body);
     height: 100vh;
+    height: 100dvh;
     overflow: hidden;
     background-image:
         radial-gradient(at 0% 0%, hsla(253, 16%, 7%, 1) 0, transparent 50%),
@@ -37,6 +39,7 @@ body {
     display: grid;
     grid-template-columns: 280px 1fr;
     height: 100vh;
+    height: 100dvh;
     width: 100vw;
 }
 
@@ -1395,9 +1398,10 @@ kbd {
         left: -320px !important;
         width: 300px !important;
         height: 100% !important;
+        height: 100dvh !important;
         z-index: 1000 !important;
         transition: left 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
-        padding: 1.5rem !important;
+        padding: calc(1.5rem + env(safe-area-inset-top)) 1.5rem calc(1.5rem + env(safe-area-inset-bottom)) 1.5rem !important;
         background: var(--bg-dark) !important;
         /* Solid background for mobile drawer */
         border-right: 1px solid var(--glass-border);
@@ -1423,7 +1427,7 @@ kbd {
     }
 
     .main-content {
-        padding: 1rem !important;
+        padding: calc(1rem + env(safe-area-inset-top)) 1rem calc(4rem + env(safe-area-inset-bottom)) 1rem !important;
     }
 
     .content-header {
@@ -1442,9 +1446,9 @@ kbd {
     /* Editor Mobile Adjustments */
     .editor-content {
         width: 95% !important;
-        height: 90vh !important;
+        height: 100dvh !important;
         min-width: unset !important;
-        padding: 1.25rem !important;
+        padding: calc(1.25rem + env(safe-area-inset-top)) 1.25rem calc(1.25rem + env(safe-area-inset-bottom)) 1.25rem !important;
         border-radius: 16px !important;
     }
 
@@ -1506,4 +1510,19 @@ kbd {
 .modal-body p {
     line-height: 1.5;
     font-size: 0.9rem;
+}
+
+/* Load More Button Styles */
+.load-more-container {
+    padding: 2rem 1rem;
+    display: flex;
+    justify-content: center;
+    width: 100%;
+}
+
+.load-more-btn {
+    width: 100%;
+    max-width: 300px;
+    justify-content: center;
+    font-weight: 600;
 }
