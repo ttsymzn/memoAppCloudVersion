@@ -10,6 +10,7 @@ let currentView = 'all'; // 'all' or 'archived'
 let selectedMemoIndex = -1;
 let displayedMemoIds = [];
 let archivedLimit = 10;
+let lastTapInfo = { id: null, time: 0 };
 
 // DOM Elements
 const memoGrid = document.getElementById('memo-grid');
@@ -436,7 +437,6 @@ function renderMemos() {
             <div class="memo-card glass ${isPinned ? 'pinned' : ''} expanded ${isSelected ? 'selected' : ''}" 
                  id="memo-${memo.id}" 
                  onclick="selectMemo('${memo.id}')" 
-                 ondblclick="openEditor('${memo.id}')"
                  style="background: ${memo.color}">
                 
                 ${isPinned ? '<div class="pin-indicator"><i data-lucide="pin"></i></div>' : ''}
@@ -730,6 +730,16 @@ function linkifyMarkdown(text) {
 // Actions Logic
 // Replaced toggleMemoContent with selectMemo
 window.selectMemo = function (id) {
+    const now = Date.now();
+    const isDoubleTap = (lastTapInfo.id === id && (now - lastTapInfo.time) < 350);
+
+    lastTapInfo = { id, time: now };
+
+    if (isDoubleTap) {
+        window.openEditor(id);
+        return;
+    }
+
     const index = displayedMemoIds.indexOf(id);
     if (index !== -1) {
         selectedMemoIndex = index;
@@ -1289,7 +1299,9 @@ window.createNewMemo = async function (content) {
 // Add keyboard shortcut handler for Ctrl+E
 memoTextarea.addEventListener('keydown', (e) => {
     // Ctrl+E (or Cmd+E on Mac)
-    if ((e.ctrlKey || e.metaKey) && e.key === 'e') {
+    // Adding case-insensitivity and keyCode check for better mobile/IME compatibility
+    const isE = e.key === 'e' || e.key === 'E' || e.keyCode === 69;
+    if ((e.ctrlKey || e.metaKey) && isE) {
         e.preventDefault();
         moveTaskToDone();
     }
@@ -1480,7 +1492,8 @@ document.addEventListener('keydown', (e) => {
 
     // Save memo: Ctrl + S (only when editor is open)
     if (!memoEditor.classList.contains('hidden')) {
-        if (e.key === 's' && (e.ctrlKey || e.metaKey)) {
+        const isS = e.key === 's' || e.key === 'S' || e.keyCode === 83;
+        if (isS && (e.ctrlKey || e.metaKey)) {
             e.preventDefault();
             saveMemoBtn.click();
         }
@@ -1888,10 +1901,16 @@ function initMobileEditorToolbar() {
 
     if (mobileToDoneBtn) {
         mobileToDoneBtn.onclick = () => {
-            // Refocus textarea and dispatch Ctrl+E event
+            // Refocus textarea and call function directly for reliability
             memoTextarea.focus();
+            moveTaskToDone();
+
+            // Also dispatch event for compatibility if listeners depend on it
             const event = new KeyboardEvent('keydown', {
                 key: 'e',
+                code: 'KeyE',
+                keyCode: 69,
+                which: 69,
                 ctrlKey: true,
                 metaKey: true,
                 bubbles: true,
