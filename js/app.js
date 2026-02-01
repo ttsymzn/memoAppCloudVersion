@@ -926,11 +926,13 @@ window.openEditor = function (id = null) {
 
             if (memo.is_archived) {
                 modalArchiveBtn.classList.add('active');
-                modalArchiveBtn.querySelector('[data-lucide]').setAttribute('data-lucide', 'archive-restore');
+                const icon = modalArchiveBtn.querySelector('[data-lucide]');
+                if (icon) icon.setAttribute('data-lucide', 'archive-restore');
                 modalArchiveBtn.title = "元に戻す";
             } else {
                 modalArchiveBtn.classList.remove('active');
-                modalArchiveBtn.querySelector('[data-lucide]').setAttribute('data-lucide', 'archive');
+                const icon = modalArchiveBtn.querySelector('[data-lucide]');
+                if (icon) icon.setAttribute('data-lucide', 'archive');
                 modalArchiveBtn.title = "アーカイブ";
             }
             updateMobileToolbarUI(memo);
@@ -1138,12 +1140,15 @@ function updateMobileToolbarUI(memo) {
     }
 
     if (mobileArchiveBtn) {
-        if (memo.is_archived) {
-            mobileArchiveBtn.classList.add('active');
-            mobileArchiveBtn.querySelector('i').setAttribute('data-lucide', 'archive-restore');
-        } else {
-            mobileArchiveBtn.classList.remove('active');
-            mobileArchiveBtn.querySelector('i').setAttribute('data-lucide', 'archive');
+        const icon = mobileArchiveBtn.querySelector('[data-lucide]');
+        if (icon) {
+            if (memo.is_archived) {
+                mobileArchiveBtn.classList.add('active');
+                icon.setAttribute('data-lucide', 'archive-restore');
+            } else {
+                mobileArchiveBtn.classList.remove('active');
+                icon.setAttribute('data-lucide', 'archive');
+            }
         }
     }
     lucide.createIcons();
