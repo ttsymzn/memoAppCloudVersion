@@ -926,13 +926,17 @@ window.openEditor = function (id = null) {
 
             if (memo.is_archived) {
                 modalArchiveBtn.classList.add('active');
-                const icon = modalArchiveBtn.querySelector('[data-lucide]');
-                if (icon) icon.setAttribute('data-lucide', 'archive-restore');
+                try {
+                    const icon = modalArchiveBtn.querySelector('[data-lucide]') || modalArchiveBtn.querySelector('svg');
+                    if (icon) icon.setAttribute('data-lucide', 'archive-restore');
+                } catch (e) { console.warn("Failed to update modal archive icon", e); }
                 modalArchiveBtn.title = "元に戻す";
             } else {
                 modalArchiveBtn.classList.remove('active');
-                const icon = modalArchiveBtn.querySelector('[data-lucide]');
-                if (icon) icon.setAttribute('data-lucide', 'archive');
+                try {
+                    const icon = modalArchiveBtn.querySelector('[data-lucide]') || modalArchiveBtn.querySelector('svg');
+                    if (icon) icon.setAttribute('data-lucide', 'archive');
+                } catch (e) { console.warn("Failed to update modal archive icon", e); }
                 modalArchiveBtn.title = "アーカイブ";
             }
             updateMobileToolbarUI(memo);
@@ -1134,24 +1138,33 @@ function updateMobileToolbarUI(memo) {
         return;
     }
 
+    // Pin Button
     if (mobilePinBtn) {
         if (memo.is_pinned) mobilePinBtn.classList.add('active');
         else mobilePinBtn.classList.remove('active');
     }
 
+    // Archive Button
     if (mobileArchiveBtn) {
-        const icon = mobileArchiveBtn.querySelector('[data-lucide]');
-        if (icon) {
-            if (memo.is_archived) {
-                mobileArchiveBtn.classList.add('active');
-                icon.setAttribute('data-lucide', 'archive-restore');
-            } else {
-                mobileArchiveBtn.classList.remove('active');
-                icon.setAttribute('data-lucide', 'archive');
+        try {
+            const icon = mobileArchiveBtn.querySelector('[data-lucide]') || mobileArchiveBtn.querySelector('svg');
+            if (icon) {
+                if (memo.is_archived) {
+                    mobileArchiveBtn.classList.add('active');
+                    icon.setAttribute('data-lucide', 'archive-restore');
+                } else {
+                    mobileArchiveBtn.classList.remove('active');
+                    icon.setAttribute('data-lucide', 'archive');
+                }
             }
+        } catch (e) {
+            console.warn("Failed to update mobile archive icon", e);
         }
     }
-    lucide.createIcons();
+
+    if (typeof lucide !== 'undefined' && lucide.createIcons) {
+        lucide.createIcons();
+    }
 }
 
 // TODONE Management Feature
