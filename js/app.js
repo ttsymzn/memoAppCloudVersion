@@ -1887,8 +1887,17 @@ function initMobileEditorToolbar() {
     }
 
     if (mobileToDoneBtn) {
-        mobileToDoneBtn.onclick = async () => {
-            await moveTaskToDone();
+        mobileToDoneBtn.onclick = () => {
+            // Refocus textarea and dispatch Ctrl+E event
+            memoTextarea.focus();
+            const event = new KeyboardEvent('keydown', {
+                key: 'e',
+                ctrlKey: true,
+                metaKey: true,
+                bubbles: true,
+                cancelable: true
+            });
+            memoTextarea.dispatchEvent(event);
         };
     }
 }
