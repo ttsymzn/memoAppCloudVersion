@@ -1364,6 +1364,10 @@ kbd {
     display: none !important;
 }
 
+.mobile-only-flex {
+    display: none !important;
+}
+
 .sidebar-overlay {
     position: fixed;
     top: 0;
@@ -1476,6 +1480,64 @@ kbd {
     .tag-badge {
         padding: 0.5rem 1rem;
         font-size: 0.9rem;
+    }
+
+    .mobile-only-flex {
+        display: flex !important;
+    }
+
+    /* Mobile Toolbar Styling */
+    .editor-mobile-toolbar {
+        display: flex;
+        gap: 0.5rem;
+        padding: 0.5rem;
+        background: rgba(255, 255, 255, 0.08);
+        backdrop-filter: blur(10px);
+        -webkit-backdrop-filter: blur(10px);
+        border: 1px solid var(--glass-border);
+        border-radius: 12px;
+        margin-top: 0.5rem;
+        overflow-x: auto;
+        scrollbar-width: none;
+        /* Hide scrollbar */
+        flex-shrink: 0;
+    }
+
+    .editor-mobile-toolbar::-webkit-scrollbar {
+        display: none;
+    }
+
+    .toolbar-btn {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        background: rgba(255, 255, 255, 0.1);
+        border: 1px solid var(--glass-border);
+        color: var(--text-main);
+        padding: 0.6rem 0.8rem;
+        border-radius: 10px;
+        font-size: 0.85rem;
+        font-weight: 600;
+        white-space: nowrap;
+        transition: all 0.2s;
+    }
+
+    .toolbar-btn:active {
+        background: var(--primary);
+        transform: scale(0.95);
+    }
+
+    .toolbar-btn i {
+        width: 18px;
+        height: 18px;
+    }
+
+    #mobile-save-btn {
+        background: var(--primary);
+        border-color: var(--primary-light);
+        flex: 1;
+        /* Make save button larger */
+        justify-content: center;
     }
 }
 

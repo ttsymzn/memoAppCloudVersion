@@ -112,6 +112,11 @@ const sidebarOverlay = document.getElementById('sidebar-overlay');
 const sidebar = document.querySelector('.sidebar');
 const editorResizer = document.getElementById('editor-resizer');
 const editorBody = document.querySelector('.editor-body');
+const mobileSaveBtn = document.getElementById('mobile-save-btn');
+const mobileCopyBtn = document.getElementById('mobile-copy-btn');
+const mobileArchiveBtn = document.getElementById('mobile-archive-btn');
+const mobilePinBtn = document.getElementById('mobile-pin-btn');
+const mobileSnippetsBtn = document.getElementById('mobile-snippets-btn');
 
 // Initialize
 async function init() {
@@ -928,6 +933,7 @@ window.openEditor = function (id = null) {
                 modalArchiveBtn.querySelector('[data-lucide]').setAttribute('data-lucide', 'archive');
                 modalArchiveBtn.title = "アーカイブ";
             }
+            updateMobileToolbarUI(memo);
         }
     } else {
         memoTextarea.value = '';
@@ -935,6 +941,7 @@ window.openEditor = function (id = null) {
         currentMemoIsPublic = false;
         deleteMemoBtn.classList.add('hidden');
         headerActionGroup.classList.add('hidden');
+        updateMobileToolbarUI(null);
     }
 
     updatePublicToggleUI();
@@ -1117,6 +1124,30 @@ memoTextarea.addEventListener('input', () => {
         performSave(true);
     }, 1500); // 1.5 seconds delay
 });
+
+function updateMobileToolbarUI(memo) {
+    if (!memo) {
+        mobileArchiveBtn?.classList.remove('active');
+        mobilePinBtn?.classList.remove('active');
+        return;
+    }
+
+    if (mobilePinBtn) {
+        if (memo.is_pinned) mobilePinBtn.classList.add('active');
+        else mobilePinBtn.classList.remove('active');
+    }
+
+    if (mobileArchiveBtn) {
+        if (memo.is_archived) {
+            mobileArchiveBtn.classList.add('active');
+            mobileArchiveBtn.querySelector('i').setAttribute('data-lucide', 'archive-restore');
+        } else {
+            mobileArchiveBtn.classList.remove('active');
+            mobileArchiveBtn.querySelector('i').setAttribute('data-lucide', 'archive');
+        }
+    }
+    lucide.createIcons();
+}
 
 // TODONE Management Feature
 // Detect if a line is a completed task (starts with [x], [X], or x)
@@ -1859,9 +1890,63 @@ function initMobileSidebar() {
 // Start
 document.addEventListener('DOMContentLoaded', async () => {
     initMobileSidebar();
+    initMobileEditorToolbar();
     loadUIState();
     await init();
 });
+
+function initMobileEditorToolbar() {
+    if (mobileSaveBtn) {
+        mobileSaveBtn.onclick = async () => {
+            await performSave();
+            memoEditor.classList.add('hidden');
+        };
+    }
+
+    if (mobileCopyBtn) {
+        mobileCopyBtn.onclick = () => {
+            if (!currentEditingMemoId) return;
+            window.copyMemo(currentEditingMemoId);
+        };
+    }
+
+    if (mobileArchiveBtn) {
+        mobileArchiveBtn.onclick = async () => {
+            if (!currentEditingMemoId) return;
+            const memo = memos.find(m => m.id === currentEditingMemoId);
+            if (memo.is_archived) {
+                await window.unarchiveMemo(currentEditingMemoId);
+            } else {
+                await window.archiveMemo(currentEditingMemoId);
+            }
+            memoEditor.classList.add('hidden');
+        };
+    }
+
+    if (mobilePinBtn) {
+        mobilePinBtn.onclick = async () => {
+            if (!currentEditingMemoId) return;
+            await window.togglePinMemo(currentEditingMemoId);
+            const memo = memos.find(m => m.id === currentEditingMemoId);
+            if (memo.is_pinned) mobilePinBtn.classList.add('active');
+            else mobilePinBtn.classList.remove('active');
+
+            // Sync with the desktop button as well
+            if (modalPinBtn) {
+                if (memo.is_pinned) modalPinBtn.classList.add('active');
+                else modalPinBtn.classList.remove('active');
+            }
+        };
+    }
+
+    if (mobileSnippetsBtn) {
+        mobileSnippetsBtn.onclick = () => {
+            renderSnippetsList();
+            clearSnippetForm();
+            snippetModal.classList.remove('hidden');
+        };
+    }
+}
 
 function initResizer() {
     if (!editorResizer || !editorBody) return;
