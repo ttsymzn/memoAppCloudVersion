@@ -1532,12 +1532,20 @@ kbd {
         height: 18px;
     }
 
+    #mobile-save-btn,
+    #mobile-todone-btn {
+        flex: 1;
+        justify-content: center;
+    }
+
     #mobile-save-btn {
         background: var(--primary);
         border-color: var(--primary-light);
-        flex: 1;
-        /* Make save button larger */
-        justify-content: center;
+    }
+
+    #mobile-todone-btn {
+        background: rgba(16, 185, 129, 0.2);
+        border-color: rgba(16, 185, 129, 0.4);
     }
 }
 
