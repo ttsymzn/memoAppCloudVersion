@@ -1537,10 +1537,11 @@ document.addEventListener('keydown', (e) => {
         helpModal.classList.add('hidden');
     }
 
-    // Save memo: Ctrl + S (only when editor is open)
+    // Save memo: Ctrl + S or Ctrl + Enter (only when editor is open)
     if (!memoEditor.classList.contains('hidden')) {
         const isS = e.key === 's' || e.key === 'S' || e.keyCode === 83;
-        if (isS && (e.ctrlKey || e.metaKey)) {
+        const isEnter = e.key === 'Enter';
+        if ((isS || isEnter) && (e.ctrlKey || e.metaKey)) {
             e.preventDefault();
             saveMemoBtn.click();
         }

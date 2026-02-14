@@ -158,7 +158,7 @@
                     <textarea id="memo-textarea" placeholder="ここにメモを入力... (1行目がタイトルになります)"></textarea>
                     <!-- Mobile Shortcut Toolbar -->
                     <div class="editor-mobile-toolbar mobile-only-flex">
-                        <button id="mobile-save-btn" class="toolbar-btn" title="保存 (Ctrl+S)">
+                        <button id="mobile-save-btn" class="toolbar-btn" title="保存 (Ctrl+S / Ctrl+Enter)">
                             <i data-lucide="save"></i>
                             <span>Save</span>
                         </button>
@@ -261,7 +261,11 @@
                     </div>
                     <div class="shortcut-row">
                         <span class="shortcut-desc">メモを保存 (編集時)</span>
-                        <div class="kbd-group"><kbd>Ctrl</kbd> + <kbd>S</kbd></div>
+                        <div class="kbd-group">
+                            <kbd>Ctrl</kbd> + <kbd>S</kbd>
+                            <span> / </span>
+                            <kbd>Ctrl</kbd> + <kbd>Enter</kbd>
+                        </div>
                     </div>
                     <div class="shortcut-row">
                         <span class="shortcut-desc">閉じる / キャンセル</span>
