@@ -36,6 +36,7 @@ const colorOptions = document.querySelectorAll('.color-option');
 const memoTagsEditor = document.getElementById('memo-tags-editor');
 
 // Help Modal DOM
+const helpBtn = document.getElementById('help-btn');
 const helpModal = document.getElementById('help-modal');
 const closeHelpBtn = document.getElementById('close-help');
 const aboutBtn = document.getElementById('about-btn');
