@@ -35,13 +35,13 @@ const deleteTagConfirmBtn = document.getElementById('delete-tag-confirm');
 const colorOptions = document.querySelectorAll('.color-option');
 const memoTagsEditor = document.getElementById('memo-tags-editor');
 
-// Help Modal DOM
-const helpBtn = document.getElementById('help-btn');
+// Modal Control Elements
 const helpModal = document.getElementById('help-modal');
 const closeHelpBtn = document.getElementById('close-help');
-const aboutBtn = document.getElementById('about-btn');
+const globalHelpBtn = document.getElementById('help-btn');
 const aboutModal = document.getElementById('about-modal');
 const closeAboutBtn = document.getElementById('close-about-btn');
+const globalAboutBtn = document.getElementById('about-btn');
 
 // Quick Tag Creator DOM
 const quickTagName = document.getElementById('quick-tag-name');
@@ -1597,22 +1597,30 @@ globalSearch.addEventListener('focus', () => {
 globalSearch.placeholder = "検索... (/)";
 
 // Help Modal Logic
-helpBtn.onclick = () => {
-    helpModal.classList.remove('hidden');
-};
+if (globalHelpBtn) {
+    globalHelpBtn.onclick = () => {
+        helpModal.classList.remove('hidden');
+    };
+}
 
-closeHelpBtn.onclick = () => {
-    helpModal.classList.add('hidden');
-};
+if (closeHelpBtn) {
+    closeHelpBtn.onclick = () => {
+        helpModal.classList.add('hidden');
+    };
+}
 
 // About Modal Logic
-aboutBtn.onclick = () => {
-    aboutModal.classList.remove('hidden');
-};
+if (globalAboutBtn) {
+    globalAboutBtn.onclick = () => {
+        aboutModal.classList.remove('hidden');
+    };
+}
 
-closeAboutBtn.onclick = () => {
-    aboutModal.classList.add('hidden');
-};
+if (closeAboutBtn) {
+    closeAboutBtn.onclick = () => {
+        aboutModal.classList.add('hidden');
+    };
+}
 
 // CSV Export Logic
 exportCsvBtn.onclick = async () => {
@@ -1840,6 +1848,8 @@ authForm.addEventListener('submit', async (e) => {
 
     const email = emailInput.value.trim();
     if (!email) return;
+
+    console.log('Login attempt for:', email);
 
     loginBtn.disabled = true;
     loginBtn.innerHTML = '<span class="auth-spinner"></span>送信中...';
