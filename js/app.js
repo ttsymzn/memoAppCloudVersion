@@ -160,17 +160,8 @@ async function init() {
 }
 
 function loadSnippets() {
-    const json = localStorage.getItem(SNIPPETS_STORAGE_KEY);
-    if (json) {
-        snippets = JSON.parse(json);
-    } else {
-        // Default example
-        snippets = [
-            { id: 'default1', keyword: ';mail', content: 'my.email@example.com' },
-            { id: 'default2', keyword: ';date', content: (new Date()).toLocaleDateString() }
-        ];
-        saveSnippets();
-    }
+    // Now snippets are loaded in fetchData() from Supabase
+    // This is kept as a placeholder if needed for early initialization
 }
 
 async function onUserLoggedIn() {
@@ -219,6 +210,62 @@ async function fetchData() {
     } else {
         memos = memosData;
         window.memos = memos; // 常に最新を同期
+    }
+
+    // Fetch snippets
+    const { data: snippetsData, error: snippetsError } = await client.from('snippets').select('*').order('keyword', { ascending: true });
+    if (snippetsError) {
+        console.error("Snippets fetch error:", snippetsError.message);
+    } else {
+        if (snippetsData && snippetsData.length > 0) {
+            snippets = snippetsData;
+        } else {
+            // If no segments in DB, try migrating from LocalStorage
+            await migrateSnippetsToCloud();
+        }
+    }
+}
+
+async function migrateSnippetsToCloud() {
+    const json = localStorage.getItem(SNIPPETS_STORAGE_KEY);
+    if (!json) {
+        // Default examples if no data anywhere
+        snippets = [
+            { id: 'default1', keyword: ';mail', content: 'my.email@example.com' },
+            { id: 'default2', keyword: ';date', content: (new Date()).toLocaleDateString() }
+        ];
+        // We don't auto-save these to cloud to avoid cluttering new users, 
+        // they will be saved when user adds/edits.
+        return;
+    }
+
+    try {
+        const localSnippets = JSON.parse(json);
+        if (localSnippets.length === 0) return;
+
+        console.log("Migrating snippets to Supabase...");
+        const client = window.getSupabase();
+        const user = window.authManager.user;
+        if (!user) return;
+
+        const snippetsToInsert = localSnippets.map(s => ({
+            keyword: s.keyword,
+            content: s.content,
+            user_id: user.id
+        }));
+
+        const { data, error } = await client.from('snippets').insert(snippetsToInsert).select();
+        if (!error) {
+            snippets = data;
+            console.log("Migration successful.");
+            // Optional: clear local storage
+            // localStorage.removeItem(SNIPPETS_STORAGE_KEY);
+        } else {
+            console.error("Migration failed:", error.message);
+            snippets = localSnippets;
+        }
+    } catch (e) {
+        console.error("Error parsing local snippets for migration:", e);
     }
 }
 
@@ -2233,7 +2280,7 @@ function renderSnippetsList() {
 }
 
 window.editSnippet = function (id) {
-    const s = snippets.find(item => item.id === id);
+    const s = snippets.find(item => item.id == id);
     if (!s) return;
 
     currentEditingSnippetId = id;
@@ -2253,7 +2300,7 @@ function clearSnippetForm() {
 
 clearSnippetBtn.onclick = clearSnippetForm;
 
-saveSnippetBtn.onclick = () => {
+saveSnippetBtn.onclick = async () => {
     const keyword = snippetKeywordInput.value.trim();
     const content = snippetContentInput.value;
 
@@ -2262,11 +2309,28 @@ saveSnippetBtn.onclick = () => {
         return;
     }
 
+    const client = window.getSupabase();
+    const user = window.authManager.user;
+    if (!user) {
+        alert('You must be logged in to save snippets.');
+        return;
+    }
+
     if (currentEditingSnippetId) {
         // Update
+        const { data, error } = await client.from('snippets')
+            .update({ keyword, content, updated_at: new Date().toISOString() })
+            .eq('id', currentEditingSnippetId)
+            .select();
+
+        if (error) {
+            alert('Failed to update snippet: ' + error.message);
+            return;
+        }
+
         const index = snippets.findIndex(s => s.id === currentEditingSnippetId);
         if (index !== -1) {
-            snippets[index] = { ...snippets[index], keyword, content };
+            snippets[index] = data[0];
         }
     } else {
         // Create
@@ -2275,29 +2339,43 @@ saveSnippetBtn.onclick = () => {
             alert('This keyword is already used.');
             return;
         }
-        snippets.push({
-            id: 'snip_' + Date.now(),
-            keyword,
-            content
-        });
+
+        const { data, error } = await client.from('snippets')
+            .insert({ keyword, content, user_id: user.id })
+            .select();
+
+        if (error) {
+            alert('Failed to save snippet: ' + error.message);
+            return;
+        }
+
+        snippets.push(data[0]);
     }
 
-    saveSnippets();
     renderSnippetsList();
     clearSnippetForm();
     showSaveStatus('Snippet Saved');
 };
 
-deleteSnippetBtn.onclick = () => {
+deleteSnippetBtn.onclick = async () => {
     if (!currentEditingSnippetId) return;
     if (!confirm('Are you sure you want to delete this snippet?')) return;
 
+    const client = window.getSupabase();
+    const { error } = await client.from('snippets').delete().eq('id', currentEditingSnippetId);
+
+    if (error) {
+        alert('Failed to delete snippet: ' + error.message);
+        return;
+    }
+
     snippets = snippets.filter(s => s.id !== currentEditingSnippetId);
-    saveSnippets();
     renderSnippetsList();
     clearSnippetForm();
+    showSaveStatus('Snippet Deleted');
 };
 
 function saveSnippets() {
-    localStorage.setItem(SNIPPETS_STORAGE_KEY, JSON.stringify(snippets));
+    // Deprecated for Supabase version
+    // localStorage.setItem(SNIPPETS_STORAGE_KEY, JSON.stringify(snippets));
 }
