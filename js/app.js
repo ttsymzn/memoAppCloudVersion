@@ -36,9 +36,11 @@ const colorOptions = document.querySelectorAll('.color-option');
 const memoTagsEditor = document.getElementById('memo-tags-editor');
 
 // Help Modal DOM
-const helpBtn = document.getElementById('help-btn');
 const helpModal = document.getElementById('help-modal');
 const closeHelpBtn = document.getElementById('close-help');
+const aboutBtn = document.getElementById('about-btn');
+const aboutModal = document.getElementById('about-modal');
+const closeAboutBtn = document.getElementById('close-about-btn');
 
 // Quick Tag Creator DOM
 const quickTagName = document.getElementById('quick-tag-name');
@@ -1535,6 +1537,7 @@ document.addEventListener('keydown', (e) => {
         tagEditorModal.classList.add('hidden');
         tagGroupEditorModal.classList.add('hidden');
         helpModal.classList.add('hidden');
+        aboutModal.classList.add('hidden');
     }
 
     // Save memo: Ctrl + S or Ctrl + Enter (only when editor is open)
@@ -1599,6 +1602,15 @@ helpBtn.onclick = () => {
 
 closeHelpBtn.onclick = () => {
     helpModal.classList.add('hidden');
+};
+
+// About Modal Logic
+aboutBtn.onclick = () => {
+    aboutModal.classList.remove('hidden');
+};
+
+closeAboutBtn.onclick = () => {
+    aboutModal.classList.add('hidden');
 };
 
 // CSV Export Logic

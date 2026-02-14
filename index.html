@@ -99,8 +99,12 @@
                     </button>
                 </div>
                 <button id="help-btn" class="help-trigger">
-                    <i data-lucide="help-circle"></i>
+                    <i data-lucide="keyboard"></i>
                     <span>ショートカット</span>
+                </button>
+                <button id="about-btn" class="help-trigger">
+                    <i data-lucide="info"></i>
+                    <span>このアプリについて</span>
                 </button>
             </div>
         </aside>
@@ -373,6 +377,77 @@
                     </button>
                 </form>
                 <div id="auth-message" class="auth-message hidden"></div>
+            </div>
+        </div>
+        <!-- About Modal -->
+        <div id="about-modal" class="modal-overlay hidden">
+            <div class="modal-content glass-premium about-card" style="max-width: 600px; width: 95%;">
+                <header class="modal-header">
+                    <h2>About Memo.</h2>
+                    <button id="close-about-btn" class="icon-btn"><i data-lucide="x"></i></button>
+                </header>
+                <div class="about-body" style="padding: 1rem 0; display: flex; flex-direction: column; gap: 1.5rem;">
+                    <div class="about-section">
+                        <p style="line-height: 1.6; color: var(--text-main);">
+                            <strong>Memo.</strong> は、シンプルさと使いやすさを追求した、クラウド同期型の次世代メモアプリです。
+                            Supabaseを利用したリアルタイム同期、Markdown対応、そして強力な作業効率化ツールを備えています。
+                        </p>
+                    </div>
+
+                    <div class="about-section">
+                        <h3
+                            style="font-size: 1rem; color: var(--primary-light); margin-bottom: 0.5rem; display: flex; align-items: center; gap: 0.5rem;">
+                            <i data-lucide="zap" style="width: 18px; height: 18px;"></i>
+                            Text Expander の活用
+                        </h3>
+                        <p style="font-size: 0.9rem; color: var(--text-dim); line-height: 1.5;">
+                            登録したキーワードを入力してスペースや読点を入れると、長い定型文へ自動展開されます。
+                            また、日付マクロも利用可能です：
+                        </p>
+                        <ul
+                            style="font-size: 0.85rem; color: var(--text-dim); margin-left: 1.5rem; margin-top: 0.5rem;">
+                            <li><code>%Y/%m/%d</code> → 今日の日付</li>
+                            <li><code>%@+1d</code> → 明日の日付 (d:日, w:週, m:月, y:年)</li>
+                            <li><code>%|</code> → 展開後のカーソル位置指定</li>
+                        </ul>
+                    </div>
+
+                    <div class="about-section">
+                        <h3
+                            style="font-size: 1rem; color: var(--primary-light); margin-bottom: 0.5rem; display: flex; align-items: center; gap: 0.5rem;">
+                            <i data-lucide="keyboard" style="width: 18px; height: 18px;"></i>
+                            主要ショートカット
+                        </h3>
+                        <div class="shortcut-summary"
+                            style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.8rem; font-size: 0.85rem;">
+                            <div
+                                style="display: flex; justify-content: space-between; padding: 4px 8px; background: rgba(255,255,255,0.05); border-radius: 4px;">
+                                <span>新規メモ</span> <kbd
+                                    style="background: rgba(255,255,255,0.1); padding: 1px 4px; border-radius: 3px; font-size: 0.75rem;">Alt+N</kbd>
+                            </div>
+                            <div
+                                style="display: flex; justify-content: space-between; padding: 4px 8px; background: rgba(255,255,255,0.05); border-radius: 4px;">
+                                <span>保存</span> <kbd
+                                    style="background: rgba(255,255,255,0.1); padding: 1px 4px; border-radius: 3px; font-size: 0.75rem;">Ctrl+S/Enter</kbd>
+                            </div>
+                            <div
+                                style="display: flex; justify-content: space-between; padding: 4px 8px; background: rgba(255,255,255,0.05); border-radius: 4px;">
+                                <span>検索</span> <kbd
+                                    style="background: rgba(255,255,255,0.1); padding: 1px 4px; border-radius: 3px; font-size: 0.75rem;">/</kbd>
+                            </div>
+                            <div
+                                style="display: flex; justify-content: space-between; padding: 4px 8px; background: rgba(255,255,255,0.05); border-radius: 4px;">
+                                <span>タスク完了</span> <kbd
+                                    style="background: rgba(255,255,255,0.1); padding: 1px 4px; border-radius: 3px; font-size: 0.75rem;">Ctrl+E</kbd>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div
+                        style="font-size: 0.8rem; color: var(--text-dim); text-align: center; margin-top: 1rem; border-top: 1px solid var(--glass-border); padding-top: 1rem;">
+                        Version 1.2.0 (Cloud)
+                    </div>
+                </div>
             </div>
         </div>
         <!-- Sidebar Overlay for Mobile -->
