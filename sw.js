@@ -1,4 +1,4 @@
-const CACHE_NAME = 'memoapp-v1';
+const CACHE_NAME = 'memoapp-v2';
 
 const STATIC_ASSETS = [
     './',
