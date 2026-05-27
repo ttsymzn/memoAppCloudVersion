@@ -191,9 +191,14 @@
                     </div>
                 </div>
                 <div class="resizer-v" id="editor-resizer"></div>
-                <div class="quick-tag-creator">
-                    <div class="section-title-small">クイックタグ作成</div>
-                    <div class="quick-tag-inputs">
+                <div class="quick-tag-creator collapsed" id="quick-tag-creator">
+                    <div class="section-title-small qtc-header" id="qtc-header">
+                        <span>クイックタグ作成</span>
+                        <button class="icon-btn qtc-toggle-btn" id="qtc-toggle-btn" title="展開/折りたたむ">
+                            <i data-lucide="chevron-down" style="width: 12px; height: 12px;"></i>
+                        </button>
+                    </div>
+                    <div class="quick-tag-inputs" id="quick-tag-inputs">
                         <input type="text" id="quick-tag-name" placeholder="新しいタグ名">
                         <input type="text" id="quick-tag-group" placeholder="グループ (任意)">
                         <button id="quick-add-tag-btn" class="icon-btn-highlight"><i data-lucide="plus"></i></button>

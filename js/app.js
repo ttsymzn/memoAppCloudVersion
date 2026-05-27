@@ -1917,6 +1917,21 @@ function showSaveStatus(message) {
     }, 3000);
 }
 
+// Quick Tag Creator toggle
+const qtcToggleBtn = document.getElementById('qtc-toggle-btn');
+const qtcHeader = document.getElementById('qtc-header');
+const quickTagCreator = document.getElementById('quick-tag-creator');
+
+function toggleQtc() {
+    const isCollapsed = quickTagCreator.classList.toggle('collapsed');
+    const icon = qtcToggleBtn.querySelector('i');
+    icon.setAttribute('data-lucide', isCollapsed ? 'chevron-down' : 'chevron-up');
+    lucide.createIcons();
+}
+
+if (qtcToggleBtn) qtcToggleBtn.addEventListener('click', (e) => { e.stopPropagation(); toggleQtc(); });
+if (qtcHeader) qtcHeader.addEventListener('click', toggleQtc);
+
 // Quick Tag Creator Logic
 quickAddTagBtn.onclick = async () => {
     const name = quickTagName.value.trim();
