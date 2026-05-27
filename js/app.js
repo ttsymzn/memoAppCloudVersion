@@ -121,6 +121,9 @@ const mobileToDoneBtn = document.getElementById('mobile-todone-btn');
 
 // Initialize
 async function init() {
+    // Start offline manager early so it can cache network events
+    await window.offlineManager.init();
+
     const client = window.getSupabase();
     if (!client) {
         // Show setup instructions if config is empty
@@ -193,6 +196,20 @@ function onUserLoggedOut() {
 async function fetchData() {
     const client = window.getSupabase();
 
+    // Offline: serve cached data so the UI still works
+    if (!navigator.onLine) {
+        const [cachedMemos, cachedTags] = await Promise.all([
+            window.offlineManager.getCachedMemos(),
+            window.offlineManager.getCachedTags(),
+        ]);
+        if (cachedMemos.length > 0 || cachedTags.length > 0) {
+            memos = cachedMemos.sort((a, b) => new Date(b.updated_at) - new Date(a.updated_at));
+            window.memos = memos;
+            tags = cachedTags;
+        }
+        return;
+    }
+
     // Fetch tags first - ordered by group then sort_order
     const { data: tagsData, error: tagsError } = await client.from('tags')
         .select('*')
@@ -204,6 +221,7 @@ async function fetchData() {
         console.error("Tags fetch error:", tagsError.message);
     } else {
         tags = tagsData;
+        await window.offlineManager.cacheTags(tags);
     }
 
     // Fetch memos
@@ -213,6 +231,7 @@ async function fetchData() {
     } else {
         memos = memosData;
         window.memos = memos; // 常に最新を同期
+        await window.offlineManager.cacheMemos(memos);
     }
 
     // Fetch snippets
@@ -277,6 +296,10 @@ function render() {
     renderMemos();
     lucide.createIcons();
 }
+
+// Expose for offline.js sync callbacks
+window.fetchData = fetchData;
+window.render = render;
 
 function renderTags() {
     tagList.innerHTML = `
@@ -1141,20 +1164,77 @@ async function performSave(isAuto = false) {
         return;
     }
 
+    const now = new Date().toISOString();
     const payload = {
         content,
         tags: selectedTagsForMemo,
         is_public: currentMemoIsPublic,
-        updated_at: new Date().toISOString()
+        updated_at: now
     };
 
-    try {
-        if (currentEditingMemoId) {
-            await client.from('memos').update(payload).eq('id', currentEditingMemoId);
+    // ── Offline path ────────────────────────────────────────────────────
+    if (!navigator.onLine) {
+        // Assign a temp ID for brand-new memos so we can track them
+        if (!currentEditingMemoId) {
+            currentEditingMemoId = 'temp_' + Date.now();
+            deleteMemoBtn.classList.remove('hidden');
+        }
+
+        const memoId = currentEditingMemoId;
+        const isTemp = String(memoId).startsWith('temp_');
+
+        // Optimistic update in the in-memory memos array
+        const existing = memos.findIndex(m => m.id === memoId);
+        if (existing >= 0) {
+            memos[existing] = { ...memos[existing], ...payload };
         } else {
-            payload.user_id = userId;
-            const { data, error } = await client.from('memos').insert([payload]).select();
-            if (!error && data && data[0]) {
+            memos.unshift({
+                id: memoId,
+                user_id: userId,
+                created_at: now,
+                is_pending: true,
+                ...payload,
+            });
+            window.memos = memos;
+        }
+
+        // Persist optimistic state to IndexedDB
+        await window.offlineManager.updateCachedMemo(memos.find(m => m.id === memoId));
+
+        // Queue the operation (upsert deduplicates saves for the same memo).
+        // memoId is either a real UUID (update) or temp_xxx (new memo → insert on sync).
+        await window.offlineManager.upsertPendingOp({
+            type: 'memo_save',
+            memoId,
+            payload: { ...payload, ...(isTemp ? { user_id: userId } : {}) },
+        });
+
+        if (isAuto) {
+            saveStatus.textContent = 'オフライン保存済み';
+            saveStatus.className = 'save-status saved';
+        }
+
+        render();
+        window.offlineManager._updateOfflineUI();
+        return;
+    }
+
+    // ── Online path ─────────────────────────────────────────────────────
+    try {
+        if (currentEditingMemoId && !String(currentEditingMemoId).startsWith('temp_')) {
+            // Normal update
+            const { error } = await client.from('memos').update(payload).eq('id', currentEditingMemoId);
+            if (error) throw error;
+        } else {
+            // New memo (or syncing a temp one now that we're online)
+            const insertPayload = { ...payload, user_id: userId };
+            const { data, error } = await client.from('memos').insert([insertPayload]).select();
+            if (error) throw error;
+            if (data && data[0]) {
+                // If we had a temp ID, clean up its cache entry
+                if (currentEditingMemoId) {
+                    await window.offlineManager.deleteCachedMemo(currentEditingMemoId);
+                }
                 currentEditingMemoId = data[0].id;
                 deleteMemoBtn.classList.remove('hidden');
             }
@@ -1361,12 +1441,40 @@ deleteMemoBtn.onclick = async () => {
     if (!currentEditingMemoId) return;
     if (!confirm('このメモを削除してもよろしいですか？')) return;
 
-    const client = window.getSupabase();
-    await client.from('memos').delete().eq('id', currentEditingMemoId);
+    const memoId = currentEditingMemoId;
+    const isTemp = String(memoId).startsWith('temp_');
 
-    await fetchData();
-    render();
+    // Optimistic removal from in-memory array
+    memos = memos.filter(m => m.id !== memoId);
+    window.memos = memos;
+    await window.offlineManager.deleteCachedMemo(memoId);
+
     memoEditor.classList.add('hidden');
+    render();
+
+    if (!navigator.onLine || isTemp) {
+        // Temp memos never existed in Supabase — just drop them
+        if (!isTemp) {
+            await window.offlineManager.upsertPendingOp({
+                type: 'memo_delete',
+                memoId,
+                payload: {},
+            });
+            window.offlineManager._updateOfflineUI();
+        }
+        return;
+    }
+
+    const client = window.getSupabase();
+    try {
+        const { error } = await client.from('memos').delete().eq('id', memoId);
+        if (error) throw error;
+    } catch (err) {
+        console.error("Delete error:", err);
+        // Re-fetch to restore if delete failed
+        await fetchData();
+        render();
+    }
 };
 
 // Logic - Tag Management
