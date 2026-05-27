@@ -111,6 +111,10 @@
                         <i data-lucide="calendar"></i>
                         <span>Calendar Settings</span>
                     </button>
+                    <button id="open-bg-settings-btn" class="sidebar-btn">
+                        <i data-lucide="palette"></i>
+                        <span>背景色</span>
+                    </button>
                 </div>
                 <button id="help-btn" class="help-trigger">
                     <i data-lucide="keyboard"></i>
@@ -464,6 +468,27 @@
                 </div>
             </div>
         </div>
+        <!-- Background Color Settings Modal -->
+        <div id="bg-settings-modal" class="modal-overlay hidden">
+            <div class="modal-content glass-premium" style="max-width: 480px; width: 92%;">
+                <header class="modal-header">
+                    <h2>背景色の設定</h2>
+                    <button id="close-bg-settings-btn" class="icon-btn"><i data-lucide="x"></i></button>
+                </header>
+                <div style="padding: 1rem 0 0;">
+                    <div class="section-title-small" style="margin-bottom: 0.75rem;">プリセット</div>
+                    <div class="theme-swatch-grid" id="theme-swatch-grid">
+                        <!-- Populated by JS -->
+                    </div>
+                    <div class="custom-color-row">
+                        <span class="custom-color-label">カスタム</span>
+                        <input type="color" id="custom-bg-color-input" value="#f5f0e8" title="カスタム背景色を選択">
+                        <span class="custom-color-hint">好みの色を自由に選択できます</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <!-- Sidebar Overlay for Mobile -->
         <div id="sidebar-overlay" class="sidebar-overlay hidden"></div>
     </div>
