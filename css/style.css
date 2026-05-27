@@ -50,6 +50,9 @@ body:not(:has(.offline-banner.hidden)) .app-container {
     --primary: #8b5cf6;
     --primary-light: #a78bfa;
     --bg-dark: #f5f0e8;
+    --bg-gradient-1: hsla(36, 40%, 88%, 1);
+    --bg-gradient-2: hsla(30, 35%, 82%, 1);
+    --bg-gradient-3: hsla(25, 45%, 85%, 1);
     --glass-bg: rgba(255, 255, 255, 0.55);
     --glass-border: rgba(0, 0, 0, 0.1);
     --glass-blur: blur(12px);
@@ -77,9 +80,9 @@ body {
     height: 100dvh;
     overflow: hidden;
     background-image:
-        radial-gradient(at 0% 0%, hsla(36, 40%, 88%, 1) 0, transparent 50%),
-        radial-gradient(at 50% 0%, hsla(30, 35%, 82%, 1) 0, transparent 50%),
-        radial-gradient(at 100% 0%, hsla(25, 45%, 85%, 1) 0, transparent 50%);
+        radial-gradient(at 0% 0%, var(--bg-gradient-1) 0, transparent 50%),
+        radial-gradient(at 50% 0%, var(--bg-gradient-2) 0, transparent 50%),
+        radial-gradient(at 100% 0%, var(--bg-gradient-3) 0, transparent 50%);
 }
 
 .app-container {
@@ -1639,4 +1642,109 @@ kbd {
     max-width: 300px;
     justify-content: center;
     font-weight: 600;
+}
+
+/* Background Color Settings */
+.theme-swatch-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 0.75rem;
+}
+
+.theme-swatch-btn {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.75rem 0.5rem;
+    border-radius: 12px;
+    border: 2px solid transparent;
+    background: rgba(255, 255, 255, 0.5);
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-size: 0.78rem;
+    font-family: var(--font-body);
+    color: var(--text-dim);
+    font-weight: 500;
+}
+
+.theme-swatch-btn:hover {
+    transform: translateY(-2px);
+    border-color: var(--glass-border);
+    background: rgba(255, 255, 255, 0.7);
+}
+
+.theme-swatch-btn.active {
+    border-color: var(--primary);
+    box-shadow: 0 0 0 2px rgba(139, 92, 246, 0.3);
+    color: var(--text-main);
+}
+
+.theme-swatch-circle {
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    border: 2px solid rgba(0, 0, 0, 0.08);
+    flex-shrink: 0;
+    position: relative;
+    overflow: hidden;
+}
+
+.theme-swatch-circle::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(circle at 30% 30%, rgba(255,255,255,0.4) 0%, transparent 60%);
+}
+
+.custom-color-row {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin-top: 1.25rem;
+    padding-top: 1.25rem;
+    border-top: 1px solid var(--glass-border);
+}
+
+.custom-color-label {
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--text-dim);
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+#custom-bg-color-input {
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    border: 2px solid var(--glass-border);
+    padding: 2px;
+    background: transparent;
+    cursor: pointer;
+    flex-shrink: 0;
+    appearance: none;
+    -webkit-appearance: none;
+    overflow: hidden;
+}
+
+#custom-bg-color-input::-webkit-color-swatch-wrapper {
+    padding: 0;
+}
+
+#custom-bg-color-input::-webkit-color-swatch {
+    border: none;
+    border-radius: 50%;
+}
+
+#custom-bg-color-input::-moz-color-swatch {
+    border: none;
+    border-radius: 50%;
+}
+
+.custom-color-hint {
+    font-size: 0.82rem;
+    color: var(--text-dim);
+    line-height: 1.4;
 }

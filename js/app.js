@@ -2511,3 +2511,186 @@ function saveSnippets() {
     // Deprecated for Supabase version
     // localStorage.setItem(SNIPPETS_STORAGE_KEY, JSON.stringify(snippets));
 }
+
+// ── Background Color / Theme Settings ────────────────────────────────────────
+
+const BG_STORAGE_KEY = 'memo_app_bg_theme';
+
+const APP_THEMES = [
+    {
+        id: 'warm-beige',
+        label: 'ウォームベージュ',
+        bg: '#f5f0e8',
+        g1: 'hsla(36, 40%, 88%, 1)',
+        g2: 'hsla(30, 35%, 82%, 1)',
+        g3: 'hsla(25, 45%, 85%, 1)',
+        swatch: 'linear-gradient(135deg, #f5f0e8 0%, #e8d8c0 100%)',
+    },
+    {
+        id: 'pure-white',
+        label: 'ピュアホワイト',
+        bg: '#f8f9fc',
+        g1: 'hsla(220, 40%, 95%, 1)',
+        g2: 'hsla(210, 35%, 92%, 1)',
+        g3: 'hsla(230, 45%, 94%, 1)',
+        swatch: 'linear-gradient(135deg, #f8f9fc 0%, #e8ecf5 100%)',
+    },
+    {
+        id: 'mint',
+        label: 'ミント',
+        bg: '#f0faf5',
+        g1: 'hsla(150, 50%, 92%, 1)',
+        g2: 'hsla(160, 40%, 88%, 1)',
+        g3: 'hsla(140, 55%, 90%, 1)',
+        swatch: 'linear-gradient(135deg, #f0faf5 0%, #c8eedd 100%)',
+    },
+    {
+        id: 'lavender',
+        label: 'ラベンダー',
+        bg: '#f3f0ff',
+        g1: 'hsla(270, 50%, 94%, 1)',
+        g2: 'hsla(260, 45%, 90%, 1)',
+        g3: 'hsla(280, 55%, 92%, 1)',
+        swatch: 'linear-gradient(135deg, #f3f0ff 0%, #ddd0ff 100%)',
+    },
+    {
+        id: 'rose',
+        label: 'ローズ',
+        bg: '#fef2f4',
+        g1: 'hsla(350, 50%, 94%, 1)',
+        g2: 'hsla(340, 45%, 90%, 1)',
+        g3: 'hsla(355, 55%, 92%, 1)',
+        swatch: 'linear-gradient(135deg, #fef2f4 0%, #ffc8d4 100%)',
+    },
+    {
+        id: 'sky',
+        label: 'スカイ',
+        bg: '#f0f6ff',
+        g1: 'hsla(210, 60%, 93%, 1)',
+        g2: 'hsla(200, 50%, 89%, 1)',
+        g3: 'hsla(220, 65%, 91%, 1)',
+        swatch: 'linear-gradient(135deg, #f0f6ff 0%, #c0d8ff 100%)',
+    },
+];
+
+function applyBgTheme(theme) {
+    const root = document.documentElement;
+    root.style.setProperty('--bg-dark', theme.bg);
+    root.style.setProperty('--bg-gradient-1', theme.g1);
+    root.style.setProperty('--bg-gradient-2', theme.g2);
+    root.style.setProperty('--bg-gradient-3', theme.g3);
+}
+
+function applyCustomBgColor(hex) {
+    const r = parseInt(hex.slice(1, 3), 16);
+    const g = parseInt(hex.slice(3, 5), 16);
+    const b = parseInt(hex.slice(5, 7), 16);
+    const lighten = (v, a) => Math.min(255, Math.round(v + (255 - v) * a));
+    const toHex = (v) => v.toString(16).padStart(2, '0');
+    const l1 = `#${toHex(lighten(r, 0.15))}${toHex(lighten(g, 0.15))}${toHex(lighten(b, 0.15))}`;
+    const l2 = `#${toHex(lighten(r, 0.08))}${toHex(lighten(g, 0.08))}${toHex(lighten(b, 0.08))}`;
+    const root = document.documentElement;
+    root.style.setProperty('--bg-dark', hex);
+    root.style.setProperty('--bg-gradient-1', l1);
+    root.style.setProperty('--bg-gradient-2', l2);
+    root.style.setProperty('--bg-gradient-3', l1);
+}
+
+function loadBgTheme() {
+    const saved = localStorage.getItem(BG_STORAGE_KEY);
+    if (!saved) return;
+    try {
+        const data = JSON.parse(saved);
+        if (data.type === 'preset') {
+            const theme = APP_THEMES.find(t => t.id === data.id);
+            if (theme) applyBgTheme(theme);
+        } else if (data.type === 'custom' && data.color) {
+            applyCustomBgColor(data.color);
+        }
+    } catch (_) {}
+}
+
+function saveBgTheme(type, idOrColor) {
+    if (type === 'preset') {
+        localStorage.setItem(BG_STORAGE_KEY, JSON.stringify({ type: 'preset', id: idOrColor }));
+    } else {
+        localStorage.setItem(BG_STORAGE_KEY, JSON.stringify({ type: 'custom', color: idOrColor }));
+    }
+}
+
+function getActiveBgThemeId() {
+    const saved = localStorage.getItem(BG_STORAGE_KEY);
+    if (!saved) return 'warm-beige';
+    try {
+        const data = JSON.parse(saved);
+        return data.type === 'preset' ? data.id : '__custom__';
+    } catch (_) { return 'warm-beige'; }
+}
+
+function getActiveCustomColor() {
+    const saved = localStorage.getItem(BG_STORAGE_KEY);
+    if (!saved) return '#f5f0e8';
+    try {
+        const data = JSON.parse(saved);
+        return data.type === 'custom' ? data.color : '#f5f0e8';
+    } catch (_) { return '#f5f0e8'; }
+}
+
+function renderThemeSwatches() {
+    const grid = document.getElementById('theme-swatch-grid');
+    if (!grid) return;
+    const activeId = getActiveBgThemeId();
+    grid.innerHTML = APP_THEMES.map(theme => `
+        <button
+            class="theme-swatch-btn${activeId === theme.id ? ' active' : ''}"
+            data-theme-id="${theme.id}"
+            title="${theme.label}"
+        >
+            <div class="theme-swatch-circle" style="background: ${theme.swatch};"></div>
+            <span>${theme.label}</span>
+        </button>
+    `).join('');
+
+    grid.querySelectorAll('.theme-swatch-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            const id = btn.dataset.themeId;
+            const theme = APP_THEMES.find(t => t.id === id);
+            if (!theme) return;
+            applyBgTheme(theme);
+            saveBgTheme('preset', id);
+            renderThemeSwatches();
+            document.getElementById('custom-bg-color-input').value = theme.bg;
+        });
+    });
+}
+
+// DOM setup for bg settings modal
+const openBgSettingsBtn = document.getElementById('open-bg-settings-btn');
+const bgSettingsModal = document.getElementById('bg-settings-modal');
+const closeBgSettingsBtn = document.getElementById('close-bg-settings-btn');
+const customBgColorInput = document.getElementById('custom-bg-color-input');
+
+openBgSettingsBtn.onclick = () => {
+    bgSettingsModal.classList.remove('hidden');
+    renderThemeSwatches();
+    customBgColorInput.value = getActiveCustomColor();
+};
+
+closeBgSettingsBtn.onclick = () => {
+    bgSettingsModal.classList.add('hidden');
+};
+
+bgSettingsModal.addEventListener('click', (e) => {
+    if (e.target === bgSettingsModal) bgSettingsModal.classList.add('hidden');
+});
+
+customBgColorInput.addEventListener('input', (e) => {
+    const color = e.target.value;
+    applyCustomBgColor(color);
+    saveBgTheme('custom', color);
+    // Deselect presets
+    document.querySelectorAll('.theme-swatch-btn').forEach(b => b.classList.remove('active'));
+});
+
+// Apply saved theme on page load
+loadBgTheme();
