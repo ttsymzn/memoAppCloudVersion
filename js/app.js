@@ -67,7 +67,6 @@ let selectedTagColor = '#3b82f6';
 let collapsedGroups = new Set();
 let autoSaveTimeout = null;
 let currentMemoIsPublic = false;
-let currentMemoColor = '';
 
 // Snippet State
 let snippets = [];
@@ -511,7 +510,7 @@ function renderMemos() {
             <div class="memo-card glass ${isPinned ? 'pinned' : ''} expanded ${isSelected ? 'selected' : ''}" 
                  id="memo-${memo.id}" 
                  onclick="selectMemo('${memo.id}')" 
-                 style="${memo.color && memo.color.startsWith('#') ? `background: ${memo.color}` : ''}">
+
                 
                 ${isPinned ? '<div class="pin-indicator"><i data-lucide="pin"></i></div>' : ''}
                 
@@ -998,7 +997,6 @@ window.openEditor = function (id = null) {
             memoTextarea.value = memo.content;
             selectedTagsForMemo = memo.tags || [];
             currentMemoIsPublic = memo.is_public || false;
-            currentMemoColor = (memo.color && memo.color.startsWith('#')) ? memo.color : '';
             deleteMemoBtn.classList.remove('hidden');
             headerActionGroup.classList.remove('hidden');
 
@@ -1027,14 +1025,12 @@ window.openEditor = function (id = null) {
         memoTextarea.value = '';
         selectedTagsForMemo = [];
         currentMemoIsPublic = false;
-        currentMemoColor = '';
         deleteMemoBtn.classList.add('hidden');
         headerActionGroup.classList.add('hidden');
         updateMobileToolbarUI(null);
     }
 
     updatePublicToggleUI();
-    applyEditorColor(currentMemoColor);
     lucide.createIcons(); // Ensure icons in header are updated
     renderTagsInEditor();
     memoEditor.classList.remove('hidden');
@@ -1100,68 +1096,8 @@ window.toggleTagSelection = function (tagId) {
 
 closeEditorBtn.onclick = () => {
     memoEditor.classList.add('hidden');
-    document.getElementById('editor-color-palette').classList.add('hidden');
 };
 
-// Editor color picker logic
-const editorColorPalette = document.getElementById('editor-color-palette');
-const modalColorBtn = document.getElementById('modal-color-btn');
-
-function lightenHexColor(hex, amount) {
-    const r = parseInt(hex.slice(1, 3), 16);
-    const g = parseInt(hex.slice(3, 5), 16);
-    const b = parseInt(hex.slice(5, 7), 16);
-    const toHex = v => v.toString(16).padStart(2, '0');
-    const mix = v => Math.min(255, Math.round(v + (255 - v) * amount));
-    return `#${toHex(mix(r))}${toHex(mix(g))}${toHex(mix(b))}`;
-}
-
-function applyEditorColor(color) {
-    const editorOverlay = document.getElementById('memo-editor');
-    const editorContent = document.querySelector('.editor-content');
-    const textarea = document.getElementById('memo-textarea');
-    if (color) {
-        editorOverlay.style.backgroundColor = color;
-        editorOverlay.style.backgroundImage = 'none';
-        editorContent.style.backgroundColor = color;
-        editorContent.style.backgroundImage = 'none';
-        textarea.style.backgroundColor = lightenHexColor(color, 0.5);
-    } else {
-        const rootStyle = getComputedStyle(document.documentElement);
-        const bg = rootStyle.getPropertyValue('--bg-dark').trim() || '#f5f0e8';
-        const g1 = rootStyle.getPropertyValue('--bg-gradient-1').trim() || 'hsla(36, 40%, 88%, 1)';
-        const g2 = rootStyle.getPropertyValue('--bg-gradient-2').trim() || 'hsla(30, 35%, 82%, 1)';
-        const g3 = rootStyle.getPropertyValue('--bg-gradient-3').trim() || 'hsla(25, 45%, 85%, 1)';
-        const gradient = `radial-gradient(at 0% 0%, ${g1} 0, transparent 50%), radial-gradient(at 50% 0%, ${g2} 0, transparent 50%), radial-gradient(at 100% 0%, ${g3} 0, transparent 50%)`;
-        editorOverlay.style.backgroundColor = bg;
-        editorOverlay.style.backgroundImage = gradient;
-        editorContent.style.backgroundColor = bg;
-        editorContent.style.backgroundImage = gradient;
-        textarea.style.removeProperty('background-color');
-    }
-    // Update active state on swatches
-    document.querySelectorAll('.editor-color-option').forEach(opt => {
-        opt.classList.toggle('active', opt.dataset.color === color);
-    });
-}
-
-modalColorBtn.addEventListener('click', (e) => {
-    e.stopPropagation();
-    editorColorPalette.classList.toggle('hidden');
-});
-
-document.querySelectorAll('.editor-color-option').forEach(opt => {
-    opt.addEventListener('click', (e) => {
-        e.stopPropagation();
-        currentMemoColor = opt.dataset.color;
-        applyEditorColor(currentMemoColor);
-        editorColorPalette.classList.add('hidden');
-    });
-});
-
-document.addEventListener('click', () => {
-    editorColorPalette.classList.add('hidden');
-});
 
 newMemoBtn.onclick = () => openEditor();
 
@@ -1234,7 +1170,6 @@ async function performSave(isAuto = false) {
         content,
         tags: selectedTagsForMemo,
         is_public: currentMemoIsPublic,
-        color: currentMemoColor || null,
         updated_at: now
     };
 
@@ -1808,7 +1743,7 @@ exportCsvBtn.onclick = async () => {
             return;
         }
 
-        const headers = ['content', 'is_pinned', 'is_archived', 'is_public', 'color', 'tags', 'created_at', 'updated_at'];
+        const headers = ['content', 'is_pinned', 'is_archived', 'is_public', 'tags', 'created_at', 'updated_at'];
         const csvRows = [headers.join(',')];
 
         for (const memo of data) {
@@ -1936,6 +1871,7 @@ async function processCSV(csvText) {
 
             const memo = { user_id: userId };
             headers.forEach((header, index) => {
+                if (header === 'color') return; // 廃止フィールドをスキップ
                 let val = values[index];
                 if (header === 'is_pinned' || header === 'is_archived' || header === 'is_public') {
                     val = val === 'true';
@@ -2660,9 +2596,6 @@ function applyBgTheme(theme) {
     root.style.setProperty('--bg-gradient-1', theme.g1);
     root.style.setProperty('--bg-gradient-2', theme.g2);
     root.style.setProperty('--bg-gradient-3', theme.g3);
-    if (!memoEditor.classList.contains('hidden')) {
-        applyEditorColor(currentMemoColor);
-    }
 }
 
 function applyCustomBgColor(hex) {
@@ -2678,9 +2611,6 @@ function applyCustomBgColor(hex) {
     root.style.setProperty('--bg-gradient-1', l1);
     root.style.setProperty('--bg-gradient-2', l2);
     root.style.setProperty('--bg-gradient-3', l1);
-    if (!memoEditor.classList.contains('hidden')) {
-        applyEditorColor(currentMemoColor);
-    }
 }
 
 function loadBgTheme() {
