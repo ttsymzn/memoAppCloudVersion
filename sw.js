@@ -44,6 +44,9 @@ self.addEventListener('activate', (event) => {
 self.addEventListener('fetch', (event) => {
     const url = new URL(event.request.url);
 
+    // chrome-extension など http/https 以外はキャッシュ不可なのでスキップ
+    if (url.protocol !== 'http:' && url.protocol !== 'https:') return;
+
     // Let auth / API traffic go directly to the network
     if (BYPASS_HOSTS.some(h => url.hostname.includes(h))) return;
 
