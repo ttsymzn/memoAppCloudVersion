@@ -1124,8 +1124,13 @@ function applyEditorColor(color) {
         editorContent.style.backgroundImage = 'none';
         textarea.style.backgroundColor = lightenHexColor(color, 0.5);
     } else {
-        editorContent.style.removeProperty('background-color');
-        editorContent.style.removeProperty('background-image');
+        const rootStyle = getComputedStyle(document.documentElement);
+        const bg = rootStyle.getPropertyValue('--bg-dark').trim() || '#f5f0e8';
+        const g1 = rootStyle.getPropertyValue('--bg-gradient-1').trim() || 'hsla(36, 40%, 88%, 1)';
+        const g2 = rootStyle.getPropertyValue('--bg-gradient-2').trim() || 'hsla(30, 35%, 82%, 1)';
+        const g3 = rootStyle.getPropertyValue('--bg-gradient-3').trim() || 'hsla(25, 45%, 85%, 1)';
+        editorContent.style.backgroundColor = bg;
+        editorContent.style.backgroundImage = `radial-gradient(at 0% 0%, ${g1} 0, transparent 50%), radial-gradient(at 50% 0%, ${g2} 0, transparent 50%), radial-gradient(at 100% 0%, ${g3} 0, transparent 50%)`;
         textarea.style.removeProperty('background-color');
     }
     // Update active state on swatches
@@ -2649,6 +2654,9 @@ function applyBgTheme(theme) {
     root.style.setProperty('--bg-gradient-1', theme.g1);
     root.style.setProperty('--bg-gradient-2', theme.g2);
     root.style.setProperty('--bg-gradient-3', theme.g3);
+    if (!memoEditor.classList.contains('hidden')) {
+        applyEditorColor(currentMemoColor);
+    }
 }
 
 function applyCustomBgColor(hex) {
@@ -2664,6 +2672,9 @@ function applyCustomBgColor(hex) {
     root.style.setProperty('--bg-gradient-1', l1);
     root.style.setProperty('--bg-gradient-2', l2);
     root.style.setProperty('--bg-gradient-3', l1);
+    if (!memoEditor.classList.contains('hidden')) {
+        applyEditorColor(currentMemoColor);
+    }
 }
 
 function loadBgTheme() {
