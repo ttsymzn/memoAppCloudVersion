@@ -511,7 +511,7 @@ function renderMemos() {
             <div class="memo-card glass ${isPinned ? 'pinned' : ''} expanded ${isSelected ? 'selected' : ''}" 
                  id="memo-${memo.id}" 
                  onclick="selectMemo('${memo.id}')" 
-                 style="background: ${memo.color}">
+                 style="${memo.color && memo.color !== 'transparent' ? `background: ${memo.color}` : ''}">
                 
                 ${isPinned ? '<div class="pin-indicator"><i data-lucide="pin"></i></div>' : ''}
                 
