@@ -1107,12 +1107,24 @@ closeEditorBtn.onclick = () => {
 const editorColorPalette = document.getElementById('editor-color-palette');
 const modalColorBtn = document.getElementById('modal-color-btn');
 
+function lightenHexColor(hex, amount) {
+    const r = parseInt(hex.slice(1, 3), 16);
+    const g = parseInt(hex.slice(3, 5), 16);
+    const b = parseInt(hex.slice(5, 7), 16);
+    const toHex = v => v.toString(16).padStart(2, '0');
+    const mix = v => Math.min(255, Math.round(v + (255 - v) * amount));
+    return `#${toHex(mix(r))}${toHex(mix(g))}${toHex(mix(b))}`;
+}
+
 function applyEditorColor(color) {
     const editorContent = document.querySelector('.editor-content');
+    const textarea = document.getElementById('memo-textarea');
     if (color) {
         editorContent.style.background = color;
+        textarea.style.background = lightenHexColor(color, 0.5);
     } else {
         editorContent.style.background = '';
+        textarea.style.background = '';
     }
     // Update active state on swatches
     document.querySelectorAll('.editor-color-option').forEach(opt => {
