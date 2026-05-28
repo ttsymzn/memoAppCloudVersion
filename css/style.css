@@ -835,14 +835,6 @@ body {
     align-items: center;
     justify-content: center;
     z-index: 2000;
-    opacity: 0;
-    pointer-events: none;
-    transition: opacity 0.3s;
-}
-
-.editor-overlay:not(.hidden) {
-    opacity: 1;
-    pointer-events: auto;
 }
 
 .editor-header {
@@ -1594,6 +1586,7 @@ kbd {
         min-width: unset !important;
         padding: calc(1rem + env(safe-area-inset-top)) 1.25rem calc(1rem + env(safe-area-inset-bottom)) 1.25rem !important;
         border-radius: 0 !important;
+        background-color: var(--bg-dark) !important;
     }
 
     .memo-meta {
