@@ -891,6 +891,13 @@ body {
     padding: 1rem 1.5rem;
     position: relative;
     overflow: hidden;
+    background-color: var(--bg-dark);
+    background-image:
+        radial-gradient(at 0% 0%, var(--bg-gradient-1) 0, transparent 50%),
+        radial-gradient(at 50% 0%, var(--bg-gradient-2) 0, transparent 50%),
+        radial-gradient(at 100% 0%, var(--bg-gradient-3) 0, transparent 50%);
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
 }
 
 .editor-body {
