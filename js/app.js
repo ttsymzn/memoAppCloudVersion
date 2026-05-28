@@ -67,6 +67,7 @@ let selectedTagColor = '#3b82f6';
 let collapsedGroups = new Set();
 let autoSaveTimeout = null;
 let currentMemoIsPublic = false;
+let currentMemoColor = '';
 
 // Snippet State
 let snippets = [];
@@ -997,6 +998,7 @@ window.openEditor = function (id = null) {
             memoTextarea.value = memo.content;
             selectedTagsForMemo = memo.tags || [];
             currentMemoIsPublic = memo.is_public || false;
+            currentMemoColor = memo.color || '';
             deleteMemoBtn.classList.remove('hidden');
             headerActionGroup.classList.remove('hidden');
 
@@ -1025,12 +1027,14 @@ window.openEditor = function (id = null) {
         memoTextarea.value = '';
         selectedTagsForMemo = [];
         currentMemoIsPublic = false;
+        currentMemoColor = '';
         deleteMemoBtn.classList.add('hidden');
         headerActionGroup.classList.add('hidden');
         updateMobileToolbarUI(null);
     }
 
     updatePublicToggleUI();
+    applyEditorColor(currentMemoColor);
     lucide.createIcons(); // Ensure icons in header are updated
     renderTagsInEditor();
     memoEditor.classList.remove('hidden');
@@ -1096,7 +1100,43 @@ window.toggleTagSelection = function (tagId) {
 
 closeEditorBtn.onclick = () => {
     memoEditor.classList.add('hidden');
+    document.getElementById('editor-color-palette').classList.add('hidden');
 };
+
+// Editor color picker logic
+const editorColorPalette = document.getElementById('editor-color-palette');
+const modalColorBtn = document.getElementById('modal-color-btn');
+
+function applyEditorColor(color) {
+    const editorContent = document.querySelector('.editor-content');
+    if (color) {
+        editorContent.style.background = color;
+    } else {
+        editorContent.style.background = '';
+    }
+    // Update active state on swatches
+    document.querySelectorAll('.editor-color-option').forEach(opt => {
+        opt.classList.toggle('active', opt.dataset.color === color);
+    });
+}
+
+modalColorBtn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    editorColorPalette.classList.toggle('hidden');
+});
+
+document.querySelectorAll('.editor-color-option').forEach(opt => {
+    opt.addEventListener('click', (e) => {
+        e.stopPropagation();
+        currentMemoColor = opt.dataset.color;
+        applyEditorColor(currentMemoColor);
+        editorColorPalette.classList.add('hidden');
+    });
+});
+
+document.addEventListener('click', () => {
+    editorColorPalette.classList.add('hidden');
+});
 
 newMemoBtn.onclick = () => openEditor();
 
@@ -1169,6 +1209,7 @@ async function performSave(isAuto = false) {
         content,
         tags: selectedTagsForMemo,
         is_public: currentMemoIsPublic,
+        color: currentMemoColor || null,
         updated_at: now
     };
 
