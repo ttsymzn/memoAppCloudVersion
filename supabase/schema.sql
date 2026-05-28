@@ -14,7 +14,6 @@ CREATE TABLE IF NOT EXISTS memos (
     user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
     content TEXT DEFAULT '',
     tags UUID[] DEFAULT '{}',
-    color TEXT DEFAULT 'rgba(255, 255, 255, 0.1)',
     is_public BOOLEAN DEFAULT false,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
