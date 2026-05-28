@@ -1120,11 +1120,13 @@ function applyEditorColor(color) {
     const editorContent = document.querySelector('.editor-content');
     const textarea = document.getElementById('memo-textarea');
     if (color) {
-        editorContent.style.background = color;
-        textarea.style.background = lightenHexColor(color, 0.5);
+        editorContent.style.backgroundColor = color;
+        editorContent.style.backgroundImage = 'none';
+        textarea.style.backgroundColor = lightenHexColor(color, 0.5);
     } else {
-        editorContent.style.background = '';
-        textarea.style.background = '';
+        editorContent.style.removeProperty('background-color');
+        editorContent.style.removeProperty('background-image');
+        textarea.style.removeProperty('background-color');
     }
     // Update active state on swatches
     document.querySelectorAll('.editor-color-option').forEach(opt => {
