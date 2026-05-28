@@ -1881,6 +1881,9 @@ async function processCSV(csvText) {
                         const tag = tags.find(t => t.name === name);
                         return tag ? tag.id : null;
                     }).filter(id => id !== null);
+                } else if (header === 'created_at' || header === 'updated_at') {
+                    // 空文字はDBに渡さず省略（DBのデフォルト値/トリガーに委ねる）
+                    if (!val) return;
                 }
                 memo[header] = val;
             });
