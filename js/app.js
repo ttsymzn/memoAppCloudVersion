@@ -1117,9 +1117,12 @@ function lightenHexColor(hex, amount) {
 }
 
 function applyEditorColor(color) {
+    const editorOverlay = document.getElementById('memo-editor');
     const editorContent = document.querySelector('.editor-content');
     const textarea = document.getElementById('memo-textarea');
     if (color) {
+        editorOverlay.style.backgroundColor = color;
+        editorOverlay.style.backgroundImage = 'none';
         editorContent.style.backgroundColor = color;
         editorContent.style.backgroundImage = 'none';
         textarea.style.backgroundColor = lightenHexColor(color, 0.5);
@@ -1129,8 +1132,11 @@ function applyEditorColor(color) {
         const g1 = rootStyle.getPropertyValue('--bg-gradient-1').trim() || 'hsla(36, 40%, 88%, 1)';
         const g2 = rootStyle.getPropertyValue('--bg-gradient-2').trim() || 'hsla(30, 35%, 82%, 1)';
         const g3 = rootStyle.getPropertyValue('--bg-gradient-3').trim() || 'hsla(25, 45%, 85%, 1)';
+        const gradient = `radial-gradient(at 0% 0%, ${g1} 0, transparent 50%), radial-gradient(at 50% 0%, ${g2} 0, transparent 50%), radial-gradient(at 100% 0%, ${g3} 0, transparent 50%)`;
+        editorOverlay.style.backgroundColor = bg;
+        editorOverlay.style.backgroundImage = gradient;
         editorContent.style.backgroundColor = bg;
-        editorContent.style.backgroundImage = `radial-gradient(at 0% 0%, ${g1} 0, transparent 50%), radial-gradient(at 50% 0%, ${g2} 0, transparent 50%), radial-gradient(at 100% 0%, ${g3} 0, transparent 50%)`;
+        editorContent.style.backgroundImage = gradient;
         textarea.style.removeProperty('background-color');
     }
     // Update active state on swatches
