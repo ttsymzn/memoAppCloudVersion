@@ -998,7 +998,7 @@ window.openEditor = function (id = null) {
             memoTextarea.value = memo.content;
             selectedTagsForMemo = memo.tags || [];
             currentMemoIsPublic = memo.is_public || false;
-            currentMemoColor = (memo.color && memo.color !== 'rgba(255, 255, 255, 0.1)') ? memo.color : '';
+            currentMemoColor = (memo.color && memo.color.startsWith('#')) ? memo.color : '';
             deleteMemoBtn.classList.remove('hidden');
             headerActionGroup.classList.remove('hidden');
 
