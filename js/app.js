@@ -507,11 +507,10 @@ function renderMemos() {
         }).join('');
 
         return `
-            <div class="memo-card glass ${isPinned ? 'pinned' : ''} expanded ${isSelected ? 'selected' : ''}" 
-                 id="memo-${memo.id}" 
-                 onclick="selectMemo('${memo.id}')" 
+            <div class="memo-card glass ${isPinned ? 'pinned' : ''} expanded ${isSelected ? 'selected' : ''}"
+                 id="memo-${memo.id}"
+                 onclick="selectMemo('${memo.id}')">
 
-                
                 ${isPinned ? '<div class="pin-indicator"><i data-lucide="pin"></i></div>' : ''}
                 
                 <div class="memo-header">
