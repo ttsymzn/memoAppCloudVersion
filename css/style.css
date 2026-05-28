@@ -1290,6 +1290,59 @@ body {
     transform: scale(1.1);
 }
 
+/* Editor memo color picker */
+.editor-color-picker-wrap {
+    position: relative;
+}
+
+.editor-color-palette {
+    position: absolute;
+    top: calc(100% + 8px);
+    left: 50%;
+    transform: translateX(-50%);
+    background: var(--glass-bg);
+    backdrop-filter: var(--glass-blur);
+    -webkit-backdrop-filter: var(--glass-blur);
+    border: 1px solid var(--glass-border);
+    border-radius: 12px;
+    padding: 8px;
+    display: flex;
+    gap: 6px;
+    z-index: 100;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.15);
+}
+
+.editor-color-palette.hidden {
+    display: none;
+}
+
+.editor-color-option {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    cursor: pointer;
+    border: 2px solid rgba(0,0,0,0.12);
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.editor-color-option:hover {
+    transform: scale(1.15);
+    border-color: rgba(0,0,0,0.3);
+}
+
+.editor-color-option.active {
+    border-color: var(--primary);
+    box-shadow: 0 0 0 2px var(--primary-light);
+}
+
+.editor-content.has-color {
+    transition: background 0.3s ease;
+}
+
 .modal-actions {
     display: flex;
     justify-content: flex-end;
