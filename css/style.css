@@ -147,9 +147,148 @@ body {
 }
 
 .tag-manager {
-    flex: 1;
+    flex-shrink: 0;
+}
+
+/* Tag filter button in sidebar */
+.tag-filter-btn {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    width: 100%;
+    padding: 0.6rem 0.75rem;
+    border-radius: 10px;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid var(--glass-border);
+    color: var(--text-dim);
+    cursor: pointer;
+    font-size: 0.85rem;
+    transition: all 0.2s;
+    text-align: left;
+}
+
+.tag-filter-btn i {
+    width: 15px;
+    height: 15px;
+    flex-shrink: 0;
+}
+
+.tag-filter-btn .tag-filter-chevron {
+    margin-left: auto;
+    opacity: 0.5;
+}
+
+.tag-filter-btn:hover {
+    background: rgba(255, 255, 255, 0.08);
+    color: var(--text-main);
+}
+
+.tag-filter-btn.has-filter {
+    background: rgba(139, 92, 246, 0.15);
+    border-color: rgba(139, 92, 246, 0.4);
+    color: var(--primary-light);
+}
+
+/* Tag filter dialog styles */
+.tag-filter-list {
+    max-height: 55vh;
     overflow-y: auto;
-    min-height: 0;
+    padding: 0.25rem 0;
+    margin: 0.5rem 0;
+}
+
+.tag-filter-group {
+    margin-bottom: 0.5rem;
+}
+
+.tag-filter-group-title {
+    display: flex;
+    align-items: center;
+    font-size: 0.62rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.07em;
+    color: var(--primary-light);
+    opacity: 0.8;
+    padding: 0.3rem 0.5rem;
+    margin-top: 0.25rem;
+}
+
+.tag-filter-group-title span {
+    flex: 1;
+}
+
+.edit-group-btn-dialog {
+    background: transparent;
+    border: none;
+    color: var(--text-dim);
+    cursor: pointer;
+    opacity: 0;
+    transition: opacity 0.2s;
+    display: flex;
+    align-items: center;
+    padding: 2px;
+}
+
+.tag-filter-group-title:hover .edit-group-btn-dialog {
+    opacity: 1;
+}
+
+.tag-filter-item {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.45rem 0.75rem;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background 0.15s;
+    font-size: 0.85rem;
+    color: var(--text-dim);
+    border: 1px solid transparent;
+}
+
+.tag-filter-item:hover {
+    background: rgba(255, 255, 255, 0.06);
+    color: var(--text-main);
+}
+
+.tag-filter-item.checked {
+    background: rgba(139, 92, 246, 0.12);
+    border-color: rgba(139, 92, 246, 0.25);
+    color: var(--text-main);
+}
+
+.tag-filter-item input[type="checkbox"] {
+    width: 15px;
+    height: 15px;
+    accent-color: var(--primary-light);
+    cursor: pointer;
+    flex-shrink: 0;
+}
+
+.tag-filter-item-name {
+    flex: 1;
+}
+
+.edit-tag-btn-dialog {
+    background: transparent;
+    border: none;
+    color: var(--text-dim);
+    cursor: pointer;
+    opacity: 0;
+    transition: opacity 0.2s;
+    display: flex;
+    align-items: center;
+    padding: 2px;
+    margin-left: auto;
+}
+
+.tag-filter-item:hover .edit-tag-btn-dialog {
+    opacity: 1;
+}
+
+.edit-tag-btn-dialog:hover {
+    color: var(--text-main);
 }
 
 .section-title {
