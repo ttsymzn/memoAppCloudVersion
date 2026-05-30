@@ -2,7 +2,7 @@
 let memos = [];
 window.memos = memos; // Calendar機能から見えるようにする
 let tags = [];
-let activeTagFilter = null;
+let activeTagFilters = new Set();
 let searchQuery = '';
 let currentEditingMemoId = null;
 let expandedMemoIds = new Set();
@@ -302,14 +302,29 @@ window.fetchData = fetchData;
 window.render = render;
 
 function renderTags() {
-    tagList.innerHTML = `
-        <li class="tag-item ${!activeTagFilter ? 'active' : ''}" onclick="setTagFilter(null)">
-            <div class="tag-dot" style="background: #fff"></div>
-            <span>All</span>
-        </li>
-    `;
+    const filterLabel = document.getElementById('tag-filter-label');
+    const filterBtn = document.getElementById('tag-filter-btn');
+    if (filterLabel) {
+        if (activeTagFilters.size === 0) {
+            filterLabel.textContent = 'すべてのタグ';
+        } else {
+            filterLabel.textContent = `${activeTagFilters.size}件選択中`;
+        }
+    }
+    if (filterBtn) filterBtn.classList.toggle('has-filter', activeTagFilters.size > 0);
+    lucide.createIcons();
+}
 
-    // Group tags
+function renderTagFilterList() {
+    const container = document.getElementById('tag-filter-list');
+    if (!container) return;
+    container.innerHTML = '';
+
+    if (tags.length === 0) {
+        container.innerHTML = '<p style="text-align:center; color: var(--text-dim); padding: 2rem 0; font-size: 0.85rem;">タグがありません。サイドバーの + ボタンで追加してください。</p>';
+        return;
+    }
+
     const groups = {};
     tags.forEach(tag => {
         const g = tag.tag_group || 'General';
@@ -318,39 +333,38 @@ function renderTags() {
     });
 
     Object.keys(groups).sort().forEach(groupName => {
-        const isCollapsed = collapsedGroups.has(groupName);
-        const groupTags = groups[groupName];
-
-        const groupHeader = document.createElement('li');
-        groupHeader.className = `tag-group-header ${isCollapsed ? 'collapsed' : ''}`;
-        groupHeader.onclick = () => toggleGroup(groupName);
-        groupHeader.innerHTML = `
+        const groupEl = document.createElement('div');
+        groupEl.className = 'tag-filter-group';
+        const groupTitle = document.createElement('div');
+        groupTitle.className = 'tag-filter-group-title';
+        groupTitle.innerHTML = `
             <span>${groupName}</span>
-            <button class="edit-group-btn" onclick="event.stopPropagation(); openTagGroupEditor('${groupName}')">
-                <i data-lucide="settings-2" style="width: 12px; height: 12px;"></i>
+            <button class="edit-group-btn-dialog" onclick="openTagGroupEditor('${groupName}')">
+                <i data-lucide="settings-2" style="width: 11px; height: 11px;"></i>
             </button>
-            <i data-lucide="chevron-down" class="chevron" style="width: 12px; height: 12px;"></i>
         `;
-        tagList.appendChild(groupHeader);
+        groupEl.appendChild(groupTitle);
 
-        const groupContainer = document.createElement('div');
-        groupContainer.className = `tag-group-items ${isCollapsed ? 'collapsed' : ''}`;
-
-        groupTags.forEach(tag => {
-            const tagItem = document.createElement('li');
-            tagItem.className = `tag-item ${activeTagFilter == tag.id ? 'active' : ''}`;
-            tagItem.onclick = () => setTagFilter(tag.id);
-            tagItem.innerHTML = `
+        groups[groupName].forEach(tag => {
+            const tagId = String(tag.id);
+            const isChecked = activeTagFilters.has(tagId);
+            const item = document.createElement('label');
+            item.className = `tag-filter-item${isChecked ? ' checked' : ''}`;
+            item.innerHTML = `
+                <input type="checkbox" value="${tagId}" ${isChecked ? 'checked' : ''}>
                 <div class="tag-dot" style="background: ${tag.color}"></div>
-                <span>${tag.name}</span>
-                <button class="edit-tag-btn" onclick="event.stopPropagation(); openTagEditor('${tag.id}')">
-                    <i data-lucide="settings-2" style="width: 12px; height: 12px;"></i>
+                <span class="tag-filter-item-name">${tag.name}</span>
+                <button class="edit-tag-btn-dialog" onclick="event.preventDefault(); event.stopPropagation(); openTagEditor('${tag.id}')">
+                    <i data-lucide="settings-2" style="width: 11px; height: 11px;"></i>
                 </button>
             `;
-            groupContainer.appendChild(tagItem);
+            item.querySelector('input').addEventListener('change', (e) => {
+                item.classList.toggle('checked', e.target.checked);
+            });
+            groupEl.appendChild(item);
         });
 
-        tagList.appendChild(groupContainer);
+        container.appendChild(groupEl);
     });
 
     lucide.createIcons();
@@ -361,7 +375,7 @@ function saveUIState() {
         expandedMemoIds: Array.from(expandedMemoIds),
         collapsedGroups: Array.from(collapsedGroups),
         currentView: currentView,
-        activeTagFilter: activeTagFilter
+        activeTagFilters: Array.from(activeTagFilters)
     };
     localStorage.setItem('memo_app_ui_state', JSON.stringify(state));
 }
@@ -378,7 +392,8 @@ function loadUIState() {
                 // Update UI for current view
                 updateSidebarActiveState();
             }
-            if (state.activeTagFilter) activeTagFilter = state.activeTagFilter;
+            if (state.activeTagFilters) activeTagFilters = new Set(state.activeTagFilters.map(String));
+            else if (state.activeTagFilter) activeTagFilters = new Set([String(state.activeTagFilter)]);
         } catch (e) {
             console.error("Failed to load UI state:", e);
         }
@@ -417,9 +432,13 @@ function renderMemos() {
         filterInfo.textContent = 'Inbox';
     }
 
-    // Apply tag filter
-    if (activeTagFilter) {
-        filtered = filtered.filter(m => m.tags && m.tags.some(tid => tid == activeTagFilter));
+    // Apply tag filter (multi-select: OR logic)
+    if (activeTagFilters.size > 0) {
+        filtered = filtered.filter(m => m.tags && m.tags.some(tid => activeTagFilters.has(String(tid))));
+    }
+    if (activeTagFilters.size > 0) {
+        const selectedNames = tags.filter(t => activeTagFilters.has(String(t.id))).map(t => t.name);
+        filterInfo.textContent += ' / ' + selectedNames.join(', ');
     }
 
     // Apply search
@@ -965,15 +984,46 @@ window.printMemo = function (id) {
 
 // Logic - Filtering
 window.setTagFilter = function (tagId) {
-    activeTagFilter = tagId;
+    if (tagId === null) {
+        activeTagFilters.clear();
+    } else {
+        const id = String(tagId);
+        if (activeTagFilters.has(id)) activeTagFilters.delete(id);
+        else activeTagFilters.add(id);
+    }
     saveUIState();
     render();
-
-    // Close sidebar on mobile
-    if (window.innerWidth <= 768) {
-        closeMobileSidebar();
-    }
+    if (window.innerWidth <= 768) closeMobileSidebar();
 };
+
+window.openTagFilterModal = function () {
+    renderTagFilterList();
+    document.getElementById('tag-filter-modal').classList.remove('hidden');
+};
+
+document.getElementById('tag-filter-btn').addEventListener('click', () => {
+    openTagFilterModal();
+});
+
+document.getElementById('close-tag-filter-modal').addEventListener('click', () => {
+    document.getElementById('tag-filter-modal').classList.add('hidden');
+});
+
+document.getElementById('apply-tag-filter-btn').addEventListener('click', () => {
+    const checkboxes = document.querySelectorAll('#tag-filter-list input[type="checkbox"]:checked');
+    activeTagFilters = new Set(Array.from(checkboxes).map(cb => cb.value));
+    saveUIState();
+    render();
+    document.getElementById('tag-filter-modal').classList.add('hidden');
+    if (window.innerWidth <= 768) closeMobileSidebar();
+});
+
+document.getElementById('clear-tag-filter-btn').addEventListener('click', () => {
+    activeTagFilters.clear();
+    saveUIState();
+    render();
+    document.getElementById('tag-filter-modal').classList.add('hidden');
+});
 
 globalSearch.addEventListener('input', (e) => {
     searchQuery = e.target.value;

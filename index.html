@@ -80,9 +80,12 @@
                     <span>Tags</span>
                     <button id="add-tag-btn" class="icon-btn"><i data-lucide="plus"></i></button>
                 </div>
-                <ul id="tag-list" class="tag-list">
-                    <!-- Tags will be dynamically loaded -->
-                </ul>
+                <button id="tag-filter-btn" class="tag-filter-btn">
+                    <i data-lucide="tag"></i>
+                    <span id="tag-filter-label">すべてのタグ</span>
+                    <i data-lucide="chevron-right" class="tag-filter-chevron"></i>
+                </button>
+                <ul id="tag-list" class="tag-list" style="display:none"></ul>
             </nav>
 
             <div class="sidebar-footer">
@@ -219,6 +222,24 @@
                         <button id="delete-memo" class="btn-danger-outline"><i data-lucide="trash-2"></i></button>
                     </div>
                 </footer>
+            </div>
+        </div>
+
+        <!-- Tag Filter Modal -->
+        <div id="tag-filter-modal" class="modal-overlay hidden">
+            <div class="modal-content glass-premium" style="max-width: 380px; width: 92%;">
+                <header class="modal-header">
+                    <h2>タグでフィルター</h2>
+                    <button id="close-tag-filter-modal" class="icon-btn"><i data-lucide="x"></i></button>
+                </header>
+                <div id="tag-filter-list" class="tag-filter-list">
+                    <!-- Populated by JS -->
+                </div>
+                <div class="modal-actions">
+                    <button id="clear-tag-filter-btn" class="btn-secondary">クリア</button>
+                    <div style="flex: 1;"></div>
+                    <button id="apply-tag-filter-btn" class="btn-primary">適用</button>
+                </div>
             </div>
         </div>
 
