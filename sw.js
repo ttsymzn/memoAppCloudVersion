@@ -1,4 +1,4 @@
-const CACHE_NAME = 'memoapp-v7';
+const CACHE_NAME = 'memoapp-v8';
 
 const STATIC_ASSETS = [
     './',
@@ -15,12 +15,17 @@ const STATIC_ASSETS = [
     './icons/icon.svg',
 ];
 
-// Hosts that must always go to the network (auth / API calls)
+// Hosts that must always go to the network (auth / API calls / CDN)
 const BYPASS_HOSTS = [
     'supabase.co',
     'accounts.google.com',
     'apis.google.com',
     'oauth2.googleapis.com',
+    'cdn.jsdelivr.net',
+    'unpkg.com',
+    'fonts.googleapis.com',
+    'fonts.gstatic.com',
+    'cdnjs.cloudflare.com',
 ];
 
 self.addEventListener('install', (event) => {
