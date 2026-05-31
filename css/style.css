@@ -116,7 +116,6 @@ body {
     border-right: 1px solid var(--glass-border);
     background: var(--glass-bg);
     /* Explicit background for mobile drawer */
-    overflow-y: auto;
 }
 
 .logo {
