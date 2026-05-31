@@ -1235,60 +1235,12 @@ body {
     background: var(--primary);
 }
 
-/* Quick Tag Creator */
-.quick-tag-creator {
-    margin: 0.25rem 0;
-    padding-top: 0.25rem;
-    border-top: 1px solid var(--glass-border);
-}
-
 .section-title-small {
     font-size: 0.7rem;
     text-transform: uppercase;
     color: var(--text-dim);
     margin-bottom: 0.5rem;
     font-weight: 700;
-}
-
-.qtc-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    cursor: pointer;
-    margin-bottom: 0;
-    padding: 0.15rem 0;
-}
-
-.qtc-header:hover {
-    color: var(--text-main);
-}
-
-.qtc-toggle-btn {
-    padding: 0.1rem 0.25rem;
-    color: var(--text-dim);
-}
-
-.quick-tag-inputs {
-    display: flex;
-    gap: 0.4rem;
-    margin-top: 0.4rem;
-    overflow: hidden;
-    transition: all 0.25s ease;
-}
-
-.quick-tag-creator.collapsed .quick-tag-inputs {
-    display: none;
-}
-
-.quick-tag-inputs input {
-    background: rgba(255, 255, 255, 0.65);
-    border: 1px solid var(--glass-border);
-    padding: 0.5rem 0.75rem;
-    border-radius: 8px;
-    color: var(--text-main);
-    font-size: 0.85rem;
-    outline: none;
-    flex: 1;
 }
 
 .icon-btn {
@@ -1326,88 +1278,181 @@ body {
     background: var(--primary-light);
 }
 
-.memo-tags-editor {
+/* Tag Chip Input */
+.tag-chip-wrapper {
+    position: relative;
+}
+
+.tag-chip-input {
     display: flex;
-    flex-direction: column;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.3rem;
+    padding: 0.35rem 0.5rem;
+    background: rgba(255, 255, 255, 0.6);
+    border: 1px solid var(--glass-border);
+    border-radius: 10px;
+    min-height: 36px;
+    cursor: text;
+    transition: border-color 0.2s, background 0.2s;
+}
+
+.tag-chip-input:focus-within {
+    border-color: var(--primary);
+    background: rgba(255, 255, 255, 0.85);
+}
+
+.tag-chip {
+    display: inline-flex;
+    align-items: center;
     gap: 0.2rem;
-    margin-bottom: 0.15rem;
-    max-height: 80px;
+    padding: 0.15rem 0.2rem 0.15rem 0.45rem;
+    background: var(--tag-color);
+    border-radius: 20px;
+    font-size: 0.72rem;
+    color: white;
+    user-select: none;
+    box-shadow: 0 2px 6px -1px color-mix(in srgb, var(--tag-color) 60%, transparent);
+}
+
+.tag-chip-dot {
+    width: 5px;
+    height: 5px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.6);
+    flex-shrink: 0;
+}
+
+.tag-chip-name {
+    line-height: 1;
+}
+
+.tag-chip-remove {
+    background: none;
+    border: none;
+    color: rgba(255, 255, 255, 0.75);
+    cursor: pointer;
+    font-size: 0.85rem;
+    line-height: 1;
+    padding: 0 0.15rem;
+    display: flex;
+    align-items: center;
+    border-radius: 50%;
+    transition: background 0.15s, color 0.15s;
+}
+
+.tag-chip-remove:hover {
+    background: rgba(0, 0, 0, 0.15);
+    color: white;
+}
+
+.tag-chip-search {
+    border: none;
+    background: transparent;
+    outline: none;
+    font-size: 0.85rem;
+    color: var(--text-main);
+    min-width: 90px;
+    flex: 1;
+    padding: 0.1rem 0;
+    font-family: var(--font-body);
+}
+
+.tag-chip-search::placeholder {
+    color: var(--text-dim);
+}
+
+/* Tag Chip Dropdown */
+.tag-chip-dropdown {
+    position: absolute;
+    bottom: calc(100% + 5px);
+    left: 0;
+    right: 0;
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid var(--glass-border);
+    border-radius: 12px;
+    max-height: 220px;
     overflow-y: auto;
-    padding-right: 0.4rem;
+    z-index: 200;
+    padding: 0.4rem;
+    box-shadow: 0 -6px 24px rgba(0, 0, 0, 0.1);
     scrollbar-width: thin;
     scrollbar-color: var(--glass-border) transparent;
 }
 
-.editor-tags-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    width: 100%;
-    padding-bottom: 0.15rem;
-    border-bottom: 1px solid var(--glass-border);
-    position: sticky;
-    top: 0;
-    background: rgba(255,255,255,0.8);
-    backdrop-filter: blur(4px);
-    z-index: 1;
-}
-
-.editor-tag-group {
-    display: flex;
-    flex-direction: column;
-    gap: 0.15rem;
-}
-
-.editor-tag-group-title {
+.tcd-group-title {
     font-size: 0.58rem;
     font-weight: 700;
     color: var(--text-dim);
     text-transform: uppercase;
     letter-spacing: 0.05em;
-    padding: 0.05rem 0;
+    padding: 0.15rem 0.3rem 0.1rem;
     opacity: 0.6;
 }
 
-.editor-tag-list {
+.tcd-group-tags {
     display: flex;
     flex-wrap: wrap;
     gap: 0.2rem;
+    margin-bottom: 0.3rem;
 }
 
-.tag-badge {
-    padding: 0.1rem 0.4rem;
+.tcd-tag-item {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    padding: 0.15rem 0.5rem;
     border-radius: 20px;
     font-size: 0.72rem;
     background: rgba(255, 255, 255, 0.6);
     border: 1px solid var(--glass-border);
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all 0.15s ease;
     user-select: none;
-    display: flex;
-    align-items: center;
-    gap: 0.25rem;
 }
 
-.tag-badge .dot {
-    width: 4px;
-    height: 4px;
+.tcd-tag-item:hover {
+    background: var(--tag-color);
+    color: white;
+    border-color: transparent;
+    box-shadow: 0 2px 8px -1px color-mix(in srgb, var(--tag-color) 50%, transparent);
+}
+
+.tcd-dot {
+    width: 5px;
+    height: 5px;
     border-radius: 50%;
     flex-shrink: 0;
+    transition: background 0.15s;
 }
 
-.tag-badge:hover {
-    background: rgba(0, 0, 0, 0.06);
+.tcd-tag-item:hover .tcd-dot {
+    background: rgba(255, 255, 255, 0.8) !important;
 }
 
-.tag-badge.selected {
-    background: var(--tag-color);
-    border-color: rgba(255, 255, 255, 0.3);
-    color: white;
-    box-shadow: 0 4px 12px -2px var(--tag-color);
+.tcd-create-new {
+    padding: 0.35rem 0.5rem;
+    font-size: 0.8rem;
+    cursor: pointer;
+    border-radius: 8px;
+    color: var(--primary);
+    margin-top: 0.1rem;
+    border-top: 1px solid var(--glass-border);
+    padding-top: 0.4rem;
+    transition: background 0.15s;
 }
 
-.tag-badge.selected .dot {
-    background: white !important;
+.tcd-create-new:hover {
+    background: rgba(139, 92, 246, 0.06);
+}
+
+.tcd-empty {
+    font-size: 0.8rem;
+    color: var(--text-dim);
+    text-align: center;
+    padding: 0.6rem 0.5rem;
 }
 
 .color-picker-simple {
@@ -1698,11 +1743,6 @@ kbd {
 
     .input-row {
         flex-direction: column;
-    }
-
-    .tag-badge {
-        padding: 0.12rem 0.45rem;
-        font-size: 0.75rem;
     }
 
     .mobile-only-flex {
