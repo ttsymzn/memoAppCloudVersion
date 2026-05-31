@@ -45,10 +45,6 @@ const aboutModal = document.getElementById('about-modal');
 const closeAboutBtn = document.getElementById('close-about-btn');
 const globalAboutBtn = document.getElementById('about-btn');
 
-// Quick Tag Creator DOM
-const quickTagName = document.getElementById('quick-tag-name');
-const quickTagGroup = document.getElementById('quick-tag-group');
-const quickAddTagBtn = document.getElementById('quick-add-tag-btn');
 const saveStatus = document.getElementById('save-status');
 
 // CSV Import/Export DOM
@@ -1090,56 +1086,85 @@ window.openEditor = function (id = null) {
     memoTextarea.focus();
 };
 
+function esc(str) {
+    return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
+
 function renderTagsInEditor() {
-    // Group tags
+    memoTagsEditor.querySelectorAll('.tag-chip').forEach(el => el.remove());
+    const searchInput = document.getElementById('tag-chip-search');
+    selectedTagsForMemo.forEach(tagId => {
+        const tag = tags.find(t => t.id === tagId);
+        if (!tag) return;
+        const chip = document.createElement('div');
+        chip.className = 'tag-chip';
+        chip.style.setProperty('--tag-color', tag.color);
+        chip.innerHTML = `<span class="tag-chip-dot"></span><span class="tag-chip-name">${esc(tag.name)}</span><button class="tag-chip-remove" type="button" title="外す">×</button>`;
+        chip.querySelector('.tag-chip-remove').addEventListener('click', (e) => {
+            e.stopPropagation();
+            window.removeTagChip(tagId);
+        });
+        memoTagsEditor.insertBefore(chip, searchInput);
+    });
+}
+
+function renderTagDropdown() {
+    const input = document.getElementById('tag-chip-search');
+    const dropdown = document.getElementById('tag-chip-dropdown');
+    if (!input || !dropdown) return;
+
+    const q = input.value.trim().toLowerCase();
     const groups = {};
     tags.forEach(tag => {
+        if (selectedTagsForMemo.includes(tag.id)) return;
+        if (q && !tag.name.toLowerCase().includes(q)) return;
         const g = tag.tag_group || 'General';
         if (!groups[g]) groups[g] = [];
         groups[g].push(tag);
     });
 
-    const headerHTML = `
-        <div class="editor-tags-header">
-            <div class="section-title-small">タグを選択</div>
-            <button class="icon-btn" onclick="event.stopPropagation(); openTagEditor()" title="タグを新規作成">
-                <i data-lucide="plus-circle" style="width: 16px; height: 16px;"></i>
-            </button>
-        </div>
-    `;
+    let html = '';
+    Object.keys(groups).sort().forEach(groupName => {
+        html += `<div class="tcd-group-title">${esc(groupName)}</div><div class="tcd-group-tags">`;
+        groups[groupName].forEach(tag => {
+            html += `<div class="tcd-tag-item" onclick="window.selectTagFromDropdown('${tag.id}')" style="--tag-color:${tag.color}"><span class="tcd-dot" style="background:${tag.color}"></span>${esc(tag.name)}</div>`;
+        });
+        html += `</div>`;
+    });
 
-    memoTagsEditor.innerHTML = headerHTML + Object.keys(groups).sort().map(groupName => {
-        const groupTags = groups[groupName];
-        return `
-            <div class="editor-tag-group">
-                <div class="editor-tag-group-title">${groupName}</div>
-                <div class="editor-tag-list">
-                    ${groupTags.map(tag => {
-            const isSelected = selectedTagsForMemo.includes(tag.id);
-            return `
-                            <div class="tag-badge ${isSelected ? 'selected' : ''}" 
-                                 onclick="toggleTagSelection('${tag.id}')"
-                                 style="--tag-color: ${tag.color}">
-                                <div class="dot" style="background: ${tag.color}"></div>
-                                ${tag.name}
-                            </div>
-                        `;
-        }).join('')}
-                </div>
-            </div>
-        `;
-    }).join('');
+    const rawQuery = input.value.trim();
+    const exactMatch = rawQuery && tags.some(t => t.name.toLowerCase() === rawQuery.toLowerCase());
+    if (rawQuery && !exactMatch) {
+        html += `<div class="tcd-create-new" id="tcd-create-btn">+ "<strong>${esc(rawQuery)}</strong>" を新規作成</div>`;
+    }
 
-    lucide.createIcons();
+    if (!html) {
+        html = `<div class="tcd-empty">${q ? '一致するタグがありません' : 'タグがありません'}</div>`;
+    }
+
+    dropdown.innerHTML = html;
+    const createBtn = document.getElementById('tcd-create-btn');
+    if (createBtn) {
+        createBtn.addEventListener('click', () => {
+            const name = input.value.trim();
+            if (name) createTagFromChipInput(name);
+        });
+    }
+    dropdown.classList.remove('hidden');
 }
 
-window.toggleTagSelection = function (tagId) {
-    if (selectedTagsForMemo.includes(tagId)) {
-        selectedTagsForMemo = selectedTagsForMemo.filter(id => id !== tagId);
-    } else {
-        selectedTagsForMemo.push(tagId);
-    }
+window.removeTagChip = function (tagId) {
+    selectedTagsForMemo = selectedTagsForMemo.filter(id => id !== tagId);
     renderTagsInEditor();
+    renderTagDropdown();
+};
+
+window.selectTagFromDropdown = function (tagId) {
+    if (!selectedTagsForMemo.includes(tagId)) selectedTagsForMemo.push(tagId);
+    renderTagsInEditor();
+    const input = document.getElementById('tag-chip-search');
+    if (input) { input.value = ''; input.focus(); }
+    renderTagDropdown();
 };
 
 closeEditorBtn.onclick = () => {
@@ -1970,53 +1995,51 @@ function showSaveStatus(message) {
     }, 3000);
 }
 
-// Quick Tag Creator toggle
-const qtcToggleBtn = document.getElementById('qtc-toggle-btn');
-const qtcHeader = document.getElementById('qtc-header');
-const quickTagCreator = document.getElementById('quick-tag-creator');
+// Tag Chip Input event handlers
+const tagChipWrapperEl = document.getElementById('tag-chip-wrapper');
+const tagChipInputEl = document.getElementById('memo-tags-editor');
+const tagChipSearchEl = document.getElementById('tag-chip-search');
+const tagChipDropdownEl = document.getElementById('tag-chip-dropdown');
 
-function toggleQtc() {
-    const isCollapsed = quickTagCreator.classList.toggle('collapsed');
-    const icon = qtcToggleBtn.querySelector('i');
-    icon.setAttribute('data-lucide', isCollapsed ? 'chevron-down' : 'chevron-up');
-    lucide.createIcons();
+if (tagChipInputEl) {
+    tagChipInputEl.addEventListener('click', () => tagChipSearchEl && tagChipSearchEl.focus());
 }
 
-if (qtcToggleBtn) qtcToggleBtn.addEventListener('click', (e) => { e.stopPropagation(); toggleQtc(); });
-if (qtcHeader) qtcHeader.addEventListener('click', toggleQtc);
+if (tagChipSearchEl) {
+    tagChipSearchEl.addEventListener('focus', () => renderTagDropdown());
+    tagChipSearchEl.addEventListener('input', () => renderTagDropdown());
+    tagChipSearchEl.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') {
+            tagChipDropdownEl && tagChipDropdownEl.classList.add('hidden');
+            tagChipSearchEl.blur();
+        } else if (e.key === 'Backspace' && tagChipSearchEl.value === '' && selectedTagsForMemo.length > 0) {
+            window.removeTagChip(selectedTagsForMemo[selectedTagsForMemo.length - 1]);
+        }
+    });
+}
 
-// Quick Tag Creator Logic
-quickAddTagBtn.onclick = async () => {
-    const name = quickTagName.value.trim();
-    if (!name) return;
+document.addEventListener('click', (e) => {
+    if (tagChipWrapperEl && tagChipDropdownEl && !tagChipWrapperEl.contains(e.target)) {
+        tagChipDropdownEl.classList.add('hidden');
+    }
+});
 
-    const group = quickTagGroup.value.trim() || 'General';
+async function createTagFromChipInput(name) {
     const client = window.getSupabase();
-
     const { data, error } = await client.from('tags').insert([
-        { name, tag_group: group, color: '#3b82f6' }
+        { name, tag_group: 'General', color: '#3b82f6' }
     ]).select();
-
-    if (error) {
-        alert("タグの作成に失敗しました: " + error.message);
-        return;
-    }
-
+    if (error) { alert('タグの作成に失敗しました: ' + error.message); return; }
     if (data && data[0]) {
-        const newTag = data[0];
-        // Automatically select the new tag
-        selectedTagsForMemo.push(newTag.id);
-
-        // Clear inputs
-        quickTagName.value = '';
-        quickTagGroup.value = '';
-
-        // Refresh UI
+        selectedTagsForMemo.push(data[0].id);
+        const input = document.getElementById('tag-chip-search');
+        if (input) input.value = '';
         await fetchData();
-        renderTags(); // Refresh sidebar
-        renderTagsInEditor(); // Refresh selection list
+        renderTags();
+        renderTagsInEditor();
+        renderTagDropdown();
     }
-};
+}
 
 // Authentication handlers
 authForm.addEventListener('submit', async (e) => {

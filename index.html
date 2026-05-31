@@ -189,22 +189,12 @@
                     </div>
                 </div>
                 <div class="resizer-v" id="editor-resizer"></div>
-                <div class="quick-tag-creator collapsed" id="quick-tag-creator">
-                    <div class="section-title-small qtc-header" id="qtc-header">
-                        <span>クイックタグ作成</span>
-                        <button class="icon-btn qtc-toggle-btn" id="qtc-toggle-btn" title="展開/折りたたむ">
-                            <i data-lucide="chevron-down" style="width: 12px; height: 12px;"></i>
-                        </button>
-                    </div>
-                    <div class="quick-tag-inputs" id="quick-tag-inputs">
-                        <input type="text" id="quick-tag-name" placeholder="新しいタグ名">
-                        <input type="text" id="quick-tag-group" placeholder="グループ (任意)">
-                        <button id="quick-add-tag-btn" class="icon-btn-highlight"><i data-lucide="plus"></i></button>
-                    </div>
-                </div>
                 <footer class="editor-footer">
-                    <div class="memo-tags-editor" id="memo-tags-editor">
-                        <!-- Currently assigned tags -->
+                    <div class="tag-chip-wrapper" id="tag-chip-wrapper">
+                        <div class="tag-chip-input" id="memo-tags-editor">
+                            <input type="text" id="tag-chip-search" class="tag-chip-search" placeholder="タグを追加..." autocomplete="off" spellcheck="false">
+                        </div>
+                        <div class="tag-chip-dropdown hidden" id="tag-chip-dropdown"></div>
                     </div>
                     <div class="memo-meta">
                         <button id="toggle-public-btn" class="btn-secondary" title="公開/非公開を切り替え">
