@@ -76,16 +76,11 @@
             </nav>
 
             <nav class="tag-manager">
-                <div class="section-title">
-                    <span>Tags</span>
-                    <button id="add-tag-btn" class="icon-btn"><i data-lucide="plus"></i></button>
-                </div>
-                <button id="tag-filter-btn" class="tag-filter-btn">
-                    <i data-lucide="tag"></i>
-                    <span id="tag-filter-label">すべてのタグ</span>
-                    <i data-lucide="chevron-right" class="tag-filter-chevron"></i>
+                <button id="tag-manage-btn" class="tag-manage-btn">
+                    <i data-lucide="tags"></i>
+                    <span id="tag-manage-label">タグの選択と編集</span>
+                    <i data-lucide="chevron-right" class="tag-manage-chevron"></i>
                 </button>
-                <ul id="tag-list" class="tag-list" style="display:none"></ul>
             </nav>
 
             <div class="sidebar-footer">
@@ -225,12 +220,15 @@
             </div>
         </div>
 
-        <!-- Tag Filter Modal -->
+        <!-- Tag Manager Modal -->
         <div id="tag-filter-modal" class="modal-overlay hidden">
             <div class="modal-content glass-premium" style="max-width: 380px; width: 92%;">
                 <header class="modal-header">
-                    <h2>タグでフィルター</h2>
-                    <button id="close-tag-filter-modal" class="icon-btn"><i data-lucide="x"></i></button>
+                    <h2>タグの選択と編集</h2>
+                    <div style="display:flex; gap:0.5rem; align-items:center;">
+                        <button id="add-tag-btn" class="icon-btn" title="新規タグを追加"><i data-lucide="plus"></i></button>
+                        <button id="close-tag-filter-modal" class="icon-btn"><i data-lucide="x"></i></button>
+                    </div>
                 </header>
                 <div id="tag-filter-list" class="tag-filter-list">
                     <!-- Populated by JS -->

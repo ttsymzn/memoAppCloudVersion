@@ -14,7 +14,6 @@ let lastTapInfo = { id: null, time: 0 };
 
 // DOM Elements
 const memoGrid = document.getElementById('memo-grid');
-const tagList = document.getElementById('tag-list');
 const globalSearch = document.getElementById('global-search');
 const memoEditor = document.getElementById('memo-editor');
 const memoTextarea = document.getElementById('memo-textarea');
@@ -22,6 +21,9 @@ const saveMemoBtn = document.getElementById('save-memo');
 const closeEditorBtn = document.getElementById('close-editor');
 const newMemoBtn = document.getElementById('new-memo-btn');
 const deleteMemoBtn = document.getElementById('delete-memo');
+
+// Tag Manager DOM
+const tagManageBtn = document.getElementById('tag-manage-btn');
 
 // Tag Editor DOM
 const addTagBtn = document.getElementById('add-tag-btn');
@@ -302,16 +304,13 @@ window.fetchData = fetchData;
 window.render = render;
 
 function renderTags() {
-    const filterLabel = document.getElementById('tag-filter-label');
-    const filterBtn = document.getElementById('tag-filter-btn');
-    if (filterLabel) {
-        if (activeTagFilters.size === 0) {
-            filterLabel.textContent = 'すべてのタグ';
-        } else {
-            filterLabel.textContent = `${activeTagFilters.size}件選択中`;
-        }
+    const label = document.getElementById('tag-manage-label');
+    if (label) {
+        label.textContent = activeTagFilters.size === 0
+            ? 'タグの選択と編集'
+            : `${activeTagFilters.size}件選択中`;
     }
-    if (filterBtn) filterBtn.classList.toggle('has-filter', activeTagFilters.size > 0);
+    if (tagManageBtn) tagManageBtn.classList.toggle('has-filter', activeTagFilters.size > 0);
     lucide.createIcons();
 }
 
@@ -321,7 +320,7 @@ function renderTagFilterList() {
     container.innerHTML = '';
 
     if (tags.length === 0) {
-        container.innerHTML = '<p style="text-align:center; color: var(--text-dim); padding: 2rem 0; font-size: 0.85rem;">タグがありません。サイドバーの + ボタンで追加してください。</p>';
+        container.innerHTML = '<p style="text-align:center; color: var(--text-dim); padding: 2rem 0; font-size: 0.85rem;">タグがありません。上の + ボタンで追加してください。</p>';
         return;
     }
 
@@ -1001,7 +1000,7 @@ window.openTagFilterModal = function () {
     document.getElementById('tag-filter-modal').classList.remove('hidden');
 };
 
-document.getElementById('tag-filter-btn').addEventListener('click', () => {
+tagManageBtn.addEventListener('click', () => {
     openTagFilterModal();
 });
 
