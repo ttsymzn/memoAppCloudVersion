@@ -147,13 +147,11 @@ body {
 }
 
 .tag-manager {
-    flex: 1;
-    min-height: 0;
-    overflow-y: auto;
+    flex-shrink: 0;
 }
 
-/* Tag filter button in sidebar */
-.tag-filter-btn {
+/* Tag manage button in sidebar */
+.tag-manage-btn {
     display: flex;
     align-items: center;
     gap: 0.5rem;
@@ -169,23 +167,23 @@ body {
     text-align: left;
 }
 
-.tag-filter-btn i {
+.tag-manage-btn i {
     width: 15px;
     height: 15px;
     flex-shrink: 0;
 }
 
-.tag-filter-btn .tag-filter-chevron {
+.tag-manage-btn .tag-manage-chevron {
     margin-left: auto;
     opacity: 0.5;
 }
 
-.tag-filter-btn:hover {
+.tag-manage-btn:hover {
     background: rgba(255, 255, 255, 0.08);
     color: var(--text-main);
 }
 
-.tag-filter-btn.has-filter {
+.tag-manage-btn.has-filter {
     background: rgba(139, 92, 246, 0.15);
     border-color: rgba(139, 92, 246, 0.4);
     color: var(--primary-light);
