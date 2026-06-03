@@ -50,7 +50,8 @@ class OfflineManager {
         window.addEventListener('online', async () => {
             this.isOnline = true;
             this._updateOfflineUI();
-            await this.syncPending();
+            // ネットワーク復帰直後は接続が不安定なため少し待ってから同期
+            setTimeout(() => this.syncPending(), 1500);
         });
 
         window.addEventListener('offline', () => {
