@@ -287,3 +287,75 @@
         transform: rotate(360deg);
     }
 }
+
+/* Offline guest section in auth card */
+.offline-guest-section {
+    margin-top: 4px;
+}
+
+.auth-button-offline {
+    background: rgba(255, 255, 255, 0.15);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    color: #fff;
+    box-shadow: none;
+    width: 100%;
+}
+
+.auth-button-offline:hover {
+    background: rgba(255, 255, 255, 0.25);
+    box-shadow: 0 4px 12px rgba(255, 255, 255, 0.1);
+    transform: translateY(-1px);
+}
+
+.offline-guest-note {
+    text-align: center;
+    font-family: 'Inter', sans-serif;
+    font-size: 12px;
+    color: rgba(255, 255, 255, 0.5);
+    margin-top: 10px;
+}
+
+/* Guest mode banner (shown at top when in guest mode) */
+.guest-mode-banner {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 9998;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    padding: 8px 16px;
+    background: rgba(245, 158, 11, 0.2);
+    border-bottom: 1px solid rgba(245, 158, 11, 0.4);
+    backdrop-filter: blur(8px);
+    font-family: 'Inter', sans-serif;
+    font-size: 13px;
+}
+
+.guest-mode-banner.hidden {
+    display: none;
+}
+
+.guest-mode-label {
+    color: #fde68a;
+}
+
+.guest-login-btn {
+    background: rgba(251, 191, 36, 0.3);
+    border: 1px solid rgba(251, 191, 36, 0.5);
+    border-radius: 6px;
+    padding: 4px 12px;
+    font-family: 'Inter', sans-serif;
+    font-size: 12px;
+    font-weight: 600;
+    color: #fde68a;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    white-space: nowrap;
+}
+
+.guest-login-btn:hover {
+    background: rgba(251, 191, 36, 0.45);
+}

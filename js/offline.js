@@ -189,6 +189,9 @@ class OfflineManager {
     async syncPending() {
         if (this._syncInProgress || !this.isOnline) return;
 
+        const userId = window.authManager?.getUserId();
+        if (!userId) return; // 未認証時はスキップ — ログイン後に syncPending が再呼び出しされる
+
         const ops = await this.getPendingOps();
         if (ops.length === 0) return;
 
@@ -196,7 +199,6 @@ class OfflineManager {
         this._setSyncingUI(true);
 
         const client = window.getSupabase();
-        const userId = window.authManager?.getUserId();
 
         for (const op of ops) {
             try {
