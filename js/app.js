@@ -3,6 +3,7 @@ let memos = [];
 window.memos = memos; // Calendar機能から見えるようにする
 let tags = [];
 let activeTagFilters = new Set();
+let isGuestMode = false;
 let searchQuery = '';
 let currentEditingMemoId = null;
 let expandedMemoIds = new Set();
@@ -157,6 +158,22 @@ async function init() {
     initPullToRefresh();
     loadSnippets(); // Load snippets on init
 
+    // Offline guest mode controls
+    const offlineCreateMemoBtn = document.getElementById('offline-create-memo-btn');
+    if (offlineCreateMemoBtn) {
+        offlineCreateMemoBtn.onclick = () => enterOfflineGuestMode();
+    }
+    const guestLoginBtn = document.getElementById('guest-login-btn');
+    if (guestLoginBtn) {
+        guestLoginBtn.onclick = () => {
+            exitGuestMode();
+            authScreen.classList.remove('hidden');
+        };
+    }
+    window.addEventListener('online', updateOfflineGuestSectionUI);
+    window.addEventListener('offline', updateOfflineGuestSectionUI);
+    updateOfflineGuestSectionUI();
+
     // Initialize Calendar integration
     if (window.initCalendar) {
         window.initCalendar();
@@ -169,11 +186,13 @@ function loadSnippets() {
 }
 
 async function onUserLoggedIn() {
+    exitGuestMode();
     authScreen.classList.add('hidden');
     userInfoDisplay.classList.remove('hidden');
     userAvatar.textContent = window.authManager.getInitial();
     userEmailDisplay.textContent = window.authManager.getUserEmail();
 
+    await window.offlineManager.syncPending(); // ゲストオフラインメモを同期
     await fetchData();
     render();
 
@@ -184,11 +203,39 @@ async function onUserLoggedIn() {
 }
 
 function onUserLoggedOut() {
-    authScreen.classList.remove('hidden');
+    if (!isGuestMode) {
+        authScreen.classList.remove('hidden');
+    }
     userInfoDisplay.classList.add('hidden');
     memos = [];
     tags = [];
     render();
+    updateOfflineGuestSectionUI();
+}
+
+function updateOfflineGuestSectionUI() {
+    const section = document.getElementById('offline-guest-section');
+    if (!section) return;
+    if (!navigator.onLine) {
+        section.classList.remove('hidden');
+    } else {
+        section.classList.add('hidden');
+    }
+}
+
+function enterOfflineGuestMode() {
+    isGuestMode = true;
+    authScreen.classList.add('hidden');
+    const banner = document.getElementById('guest-mode-banner');
+    if (banner) banner.classList.remove('hidden');
+    openEditor();
+}
+
+function exitGuestMode() {
+    if (!isGuestMode) return;
+    isGuestMode = false;
+    const banner = document.getElementById('guest-mode-banner');
+    if (banner) banner.classList.add('hidden');
 }
 
 async function fetchData() {
@@ -1233,7 +1280,7 @@ async function performSave(isAuto = false) {
     const client = window.getSupabase();
     const userId = window.authManager.getUserId();
 
-    if (!userId) {
+    if (!userId && navigator.onLine) {
         console.error('User not authenticated');
         return;
     }

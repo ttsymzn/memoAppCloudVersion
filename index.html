@@ -47,6 +47,12 @@
         <span class="offline-pending" style="display:none;"></span>
     </div>
 
+    <!-- Guest mode banner (shown when using app without login while offline) -->
+    <div id="guest-mode-banner" class="guest-mode-banner hidden">
+        <span class="guest-mode-label">ゲストモード中 — ログイン後にメモが同期されます</span>
+        <button id="guest-login-btn" class="guest-login-btn">ログイン</button>
+    </div>
+
     <div class="app-container">
         <!-- Sidebar or Header for Search & Tags -->
         <aside class="sidebar glass">
@@ -409,6 +415,13 @@
                     </button>
                 </form>
                 <div id="auth-message" class="auth-message hidden"></div>
+                <div id="offline-guest-section" class="offline-guest-section hidden">
+                    <div class="auth-divider">または</div>
+                    <button type="button" id="offline-create-memo-btn" class="auth-button auth-button-offline">
+                        オフラインでメモを作成
+                    </button>
+                    <p class="offline-guest-note">ログイン後に自動で同期されます</p>
+                </div>
             </div>
         </div>
         <!-- About Modal -->
