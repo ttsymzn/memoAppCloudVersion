@@ -199,53 +199,63 @@ class OfflineManager {
         this._syncInProgress = true;
         this._setSyncingUI(true);
 
-        const client = window.getSupabase();
+        let hasFailures = false;
 
-        for (const op of ops) {
-            try {
-                if (op.type === 'memo_save') {
-                    const isTemp = String(op.memoId).startsWith('temp_');
-                    if (isTemp) {
-                        // New memo — INSERT
-                        const insertPayload = { ...op.payload, user_id: userId };
-                        const { data, error } = await client.from('memos')
-                            .insert([insertPayload]).select();
-                        if (error) throw error;
-                        // Swap temp entry with the real one
-                        if (data?.[0]) {
-                            await this.deleteCachedMemo(op.memoId);
-                            await this.updateCachedMemo(data[0]);
+        try {
+            const client = window.getSupabase();
+
+            for (const op of ops) {
+                try {
+                    if (op.type === 'memo_save') {
+                        const isTemp = String(op.memoId).startsWith('temp_');
+                        if (isTemp) {
+                            // New memo — INSERT
+                            const insertPayload = { ...op.payload, user_id: userId };
+                            const { data, error } = await client.from('memos')
+                                .insert([insertPayload]).select();
+                            if (error) throw error;
+                            // Swap temp entry with the real one
+                            if (data?.[0]) {
+                                await this.deleteCachedMemo(op.memoId);
+                                await this.updateCachedMemo(data[0]);
+                            }
+                        } else {
+                            // Existing memo — UPDATE
+                            const { error } = await client.from('memos')
+                                .update(op.payload).eq('id', op.memoId);
+                            if (error) throw error;
                         }
-                    } else {
-                        // Existing memo — UPDATE
-                        const { error } = await client.from('memos')
-                            .update(op.payload).eq('id', op.memoId);
-                        if (error) throw error;
+                    } else if (op.type === 'memo_delete') {
+                        if (!String(op.memoId).startsWith('temp_')) {
+                            const { error } = await client.from('memos')
+                                .delete().eq('id', op.memoId);
+                            if (error) throw error;
+                        }
                     }
-                } else if (op.type === 'memo_delete') {
-                    if (!String(op.memoId).startsWith('temp_')) {
-                        const { error } = await client.from('memos')
-                            .delete().eq('id', op.memoId);
-                        if (error) throw error;
-                    }
+
+                    await this.clearPendingOp(op.id);
+                } catch (err) {
+                    console.error('[Offline] Sync failed for op:', op.id, err);
+                    hasFailures = true;
                 }
-
-                await this.clearPendingOp(op.id);
-            } catch (err) {
-                console.error('[Offline] Sync failed for op:', op.id, err);
             }
+
+            // Re-fetch from server to resolve any temp-ID references
+            if (window.fetchData && window.render) {
+                await window.fetchData();
+                window.render();
+            }
+        } finally {
+            // 例外が起きても必ずフラグを戻す
+            this._syncInProgress = false;
+            this._setSyncingUI(false);
+            this._updateOfflineUI();
         }
 
-        this._syncInProgress = false;
-        this._setSyncingUI(false);
-
-        // Re-fetch from server to resolve any temp-ID references
-        if (window.fetchData && window.render) {
-            await window.fetchData();
-            window.render();
+        // 一部失敗した場合は少し後にリトライ
+        if (hasFailures && this.isOnline) {
+            setTimeout(() => this.syncPending(), 5000);
         }
-
-        this._updateOfflineUI();
     }
 
     // ── UI helpers ─────────────────────────────────────────────────────────
