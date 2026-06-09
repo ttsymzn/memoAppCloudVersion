@@ -19,8 +19,10 @@ class AuthManager {
         client.auth.onAuthStateChange((event, session) => {
             console.log('Auth state changed:', event);
             this.user = session?.user || null;
-            
+
             if (this.onAuthStateChange) {
+                // TOKEN_REFRESHED はトークンの自動更新であり、ログイン状態の変化ではないためスキップ
+                if (event === 'TOKEN_REFRESHED' || event === 'USER_UPDATED') return;
                 this.onAuthStateChange(this.user);
             }
         });
