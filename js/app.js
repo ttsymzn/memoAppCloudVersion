@@ -66,6 +66,7 @@ let selectedTagColor = '#3b82f6';
 let collapsedGroups = new Set();
 let autoSaveTimeout = null;
 let currentMemoIsPublic = false;
+let isSaving = false;
 
 // Snippet State
 let snippets = [];
@@ -135,10 +136,8 @@ async function init() {
         return;
     }
 
-    // Initialize auth manager
-    await window.authManager.init();
-
-    // Set up auth state change handler
+    // コールバックを先に設定してから init() を呼ぶことで、
+    // INITIAL_SESSION イベントが確実にキャッチされ二重呼び出しを防ぐ
     window.authManager.onAuthStateChange = (user) => {
         if (user) {
             onUserLoggedIn();
@@ -147,12 +146,8 @@ async function init() {
         }
     };
 
-    // Check if user is already logged in
-    if (window.authManager.isAuthenticated()) {
-        onUserLoggedIn();
-    } else {
-        onUserLoggedOut();
-    }
+    // Initialize auth manager (INITIAL_SESSION イベントがコールバック経由で初期状態を処理する)
+    await window.authManager.init();
 
     initResizer();
     initPullToRefresh();
@@ -1269,6 +1264,9 @@ saveMemoBtn.onclick = async () => {
 };
 
 async function performSave(isAuto = false) {
+    if (isSaving) return;
+    isSaving = true;
+    try {
     const content = memoTextarea.value;
     if (!content.trim() && !isAuto) return;
 
@@ -1374,6 +1372,8 @@ async function performSave(isAuto = false) {
             saveStatus.textContent = '保存失敗';
             saveStatus.className = 'save-status';
         }
+    } finally {
+        isSaving = false;
     }
 }
 
