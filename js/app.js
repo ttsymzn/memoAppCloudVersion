@@ -1266,7 +1266,6 @@ saveMemoBtn.onclick = async () => {
 async function performSave(isAuto = false) {
     if (isSaving) return;
     isSaving = true;
-    try {
     const content = memoTextarea.value;
     if (!content.trim() && !isAuto) return;
 
