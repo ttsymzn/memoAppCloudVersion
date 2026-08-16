@@ -1458,13 +1458,17 @@ async function findOrCreateDoneMemo() {
 }
 
 // Move completed task to DONE memo
+let isMovingTaskToDone = false;
 async function moveTaskToDone() {
     if (!currentEditingMemoId) return;
+    if (isMovingTaskToDone) return;
+    isMovingTaskToDone = true;
 
     const currentLine = getCurrentLine(memoTextarea);
 
     // Check if current line is a completed task
     if (!isCompletedTask(currentLine.lineText)) {
+        isMovingTaskToDone = false;
         alert('カーソルのある行は完了タスク（[x]、[X]、ｘで始まる行）ではありません。');
         return;
     }
@@ -1474,7 +1478,7 @@ async function moveTaskToDone() {
         const doneMemo = await findOrCreateDoneMemo();
         if (!doneMemo) {
             alert('DONEメモの作成に失敗しました。');
-            return;
+            return; // finally still runs and resets the flag
         }
 
         // Remove the completed task from current memo
@@ -1514,6 +1518,8 @@ async function moveTaskToDone() {
     } catch (error) {
         console.error('Error moving task to DONE:', error);
         alert('タスクの移動に失敗しました。');
+    } finally {
+        isMovingTaskToDone = false;
     }
 }
 
@@ -2217,22 +2223,8 @@ function initMobileEditorToolbar() {
 
     if (mobileToDoneBtn) {
         mobileToDoneBtn.onclick = () => {
-            // Refocus textarea and call function directly for reliability
             memoTextarea.focus();
             moveTaskToDone();
-
-            // Also dispatch event for compatibility if listeners depend on it
-            const event = new KeyboardEvent('keydown', {
-                key: 'e',
-                code: 'KeyE',
-                keyCode: 69,
-                which: 69,
-                ctrlKey: true,
-                metaKey: true,
-                bubbles: true,
-                cancelable: true
-            });
-            memoTextarea.dispatchEvent(event);
         };
     }
 }
