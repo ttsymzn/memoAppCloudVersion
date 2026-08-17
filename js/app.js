@@ -1485,23 +1485,35 @@ async function moveTaskToDone() {
         const updatedLines = currentLine.allLines.filter((_, index) => index !== currentLine.lineIndex);
         const newContent = updatedLines.join('\n');
 
-        // Add task to DONE memo
-        const taskText = currentLine.lineText.trim();
-        const doneContent = doneMemo.content + '\n' + taskText;
-
         const client = window.getSupabase();
+        const isAlreadyInDoneMemo = doneMemo.id === currentEditingMemoId;
 
-        // Update current memo
-        await client.from('memos').update({
-            content: newContent,
-            updated_at: new Date().toISOString()
-        }).eq('id', currentEditingMemoId);
+        if (isAlreadyInDoneMemo) {
+            // The task already lives in today's DONE memo (the user is editing
+            // the DONE memo itself). Just drop the line instead of also
+            // appending it via doneMemo.content, which would duplicate it —
+            // that stale snapshot doesn't reflect the removal we're doing here.
+            await client.from('memos').update({
+                content: newContent,
+                updated_at: new Date().toISOString()
+            }).eq('id', currentEditingMemoId);
+        } else {
+            // Add task to DONE memo
+            const taskText = currentLine.lineText.trim();
+            const doneContent = doneMemo.content + '\n' + taskText;
 
-        // Update DONE memo
-        await client.from('memos').update({
-            content: doneContent,
-            updated_at: new Date().toISOString()
-        }).eq('id', doneMemo.id);
+            // Update current memo
+            await client.from('memos').update({
+                content: newContent,
+                updated_at: new Date().toISOString()
+            }).eq('id', currentEditingMemoId);
+
+            // Update DONE memo
+            await client.from('memos').update({
+                content: doneContent,
+                updated_at: new Date().toISOString()
+            }).eq('id', doneMemo.id);
+        }
 
         // Update UI
         memoTextarea.value = newContent;
