@@ -11,7 +11,14 @@ function initSupabase() {
     }
     
     if (!supabaseInstance) {
-        supabaseInstance = createClient(config.url, config.key);
+        supabaseInstance = createClient(config.url, config.key, {
+            auth: {
+                persistSession: true,
+                autoRefreshToken: true,
+                detectSessionInUrl: true,
+                storage: window.localStorage,
+            }
+        });
     }
     return supabaseInstance;
 }
