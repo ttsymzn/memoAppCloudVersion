@@ -1396,7 +1396,7 @@ function updateMobileToolbarUI(memo) {
 // Detect if a line is a completed task (starts with [x], [X], or x)
 function isCompletedTask(line) {
     const trimmed = line.trim();
-    return /^(\[x\]|\[X\]|x|「ｘ」)/i.test(trimmed);
+    return /^(\[x\]|\[X\]|ｘ)/i.test(trimmed);
 }
 
 // Get the current line where cursor is positioned
