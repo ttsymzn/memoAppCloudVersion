@@ -1051,6 +1051,20 @@ body {
     line-height: 1.6;
     outline: none;
     resize: none;
+    caret-color: var(--primary);
+    /* 現在行ハイライトをスクロールに追従させる */
+    background-attachment: local;
+}
+
+/* カーソルのある行をハイライトして位置をわかりやすくする */
+#memo-textarea.caret-line-active {
+    background-image: linear-gradient(
+        color-mix(in srgb, var(--primary) 12%, transparent),
+        color-mix(in srgb, var(--primary) 12%, transparent)
+    );
+    background-repeat: no-repeat;
+    background-size: 100% var(--caret-line-height, 1.6em);
+    background-position: 0 var(--caret-line-top, 0);
 }
 
 .editor-footer {

@@ -1388,6 +1388,66 @@ memoTextarea.addEventListener('input', () => {
     }, 1500); // 1.5 seconds delay
 });
 
+// Current-line highlight: shows where the caret is in the editor
+const caretMirror = document.createElement('div');
+caretMirror.setAttribute('aria-hidden', 'true');
+document.body.appendChild(caretMirror);
+let caretHighlightFrame = null;
+
+function updateCaretLineHighlight() {
+    caretHighlightFrame = null;
+    const { selectionStart, selectionEnd } = memoTextarea;
+    if (document.activeElement !== memoTextarea || selectionStart !== selectionEnd) {
+        memoTextarea.classList.remove('caret-line-active');
+        return;
+    }
+
+    // Mirror the textarea's text layout to find the caret's visual line
+    const style = getComputedStyle(memoTextarea);
+    Object.assign(caretMirror.style, {
+        position: 'absolute',
+        visibility: 'hidden',
+        top: '0',
+        left: '-9999px',
+        boxSizing: 'border-box',
+        width: `${memoTextarea.clientWidth}px`,
+        border: '0',
+        paddingTop: style.paddingTop,
+        paddingRight: style.paddingRight,
+        paddingBottom: style.paddingBottom,
+        paddingLeft: style.paddingLeft,
+        font: style.font,
+        letterSpacing: style.letterSpacing,
+        wordSpacing: style.wordSpacing,
+        lineHeight: style.lineHeight,
+        tabSize: style.tabSize,
+        whiteSpace: 'pre-wrap',
+        overflowWrap: 'break-word',
+        wordBreak: style.wordBreak
+    });
+    caretMirror.textContent = memoTextarea.value.substring(0, selectionStart);
+    const marker = document.createElement('span');
+    marker.textContent = '\u200b';
+    caretMirror.appendChild(marker);
+
+    const lineHeight = parseFloat(style.lineHeight) || parseFloat(style.fontSize) * 1.6;
+    memoTextarea.style.setProperty('--caret-line-top', `${marker.offsetTop}px`);
+    memoTextarea.style.setProperty('--caret-line-height', `${lineHeight}px`);
+    memoTextarea.classList.add('caret-line-active');
+}
+
+function scheduleCaretLineHighlight() {
+    if (caretHighlightFrame === null) {
+        caretHighlightFrame = requestAnimationFrame(updateCaretLineHighlight);
+    }
+}
+
+document.addEventListener('selectionchange', scheduleCaretLineHighlight);
+['input', 'focus', 'blur', 'click', 'keyup'].forEach(type =>
+    memoTextarea.addEventListener(type, scheduleCaretLineHighlight)
+);
+window.addEventListener('resize', scheduleCaretLineHighlight);
+
 function updateMobileToolbarUI(memo) {
     // Currently no dynamic state updates needed for the simplified toolbar
 }
